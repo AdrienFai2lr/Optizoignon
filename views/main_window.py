@@ -1,9 +1,13 @@
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, 
                            QHBoxLayout, QPushButton, QComboBox, QLabel,
                            QStackedWidget)
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QPixmap
 from .monster_detail import MonsterDetailView
-from .monster_table import MonsterTable  # Import corrigé ici
+from .monster_table import MonsterTable
 from controllers.monster_controller import MonsterController, DatabaseError
+from .dropJson import DropZoneWidget
+from PyQt6.QtWidgets import QGridLayout
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -13,7 +17,7 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(1200, 800)
         self.init_ui()
         self.load_monsters()
-
+    
     def init_ui(self):
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -22,22 +26,112 @@ class MainWindow(QMainWindow):
         # Gestionnaire de pages
         self.stacked_widget = QStackedWidget()
         
+        # Page d'accueil
+        self.home_page = QWidget()
+        self.setup_home_page()
+        self.stacked_widget.addWidget(self.home_page)
+        
         # Page liste des monstres
         self.list_page = QWidget()
         self.setup_list_page()
         self.stacked_widget.addWidget(self.list_page)
         
         # Page détail d'un monstre
-        self.detail_view = MonsterDetailView(self)  # Passer self comme référence à la MainWindow
+        self.detail_view = MonsterDetailView(self)
         self.stacked_widget.addWidget(self.detail_view)
         
         self.main_layout.addWidget(self.stacked_widget)
+        
+        # Définir la page d'accueil comme page par défaut
+        self.stacked_widget.setCurrentWidget(self.home_page)
+
+    def handle_json_import(self, data):
+        """Gère l'importation des données JSON"""
+        try:
+            if not isinstance(data, dict):
+                raise ValueError("Le format des données n'est pas valide")
+            
+            required_fields = ['monsters', 'runes', 'artifacts']
+            for field in required_fields:
+                if field not in data:
+                    raise ValueError(f"Champ requis manquant: {field}")
+            
+            self.monster_controller.import_data(data)
+            self.load_monsters()
+            self.statusBar().showMessage("Données importées avec succès", 5000)
+            
+        except ValueError as e:
+            self.statusBar().showMessage(f"Erreur de format: {str(e)}", 5000)
+        except DatabaseError as e:
+            self.statusBar().showMessage(f"Erreur de base de données: {str(e)}", 5000)
+        except Exception as e:
+            self.statusBar().showMessage(f"Erreur inattendue: {str(e)}", 5000)
+            print(f"Erreur détaillée: {str(e)}")
+
+    def setup_home_page(self):
+        layout = QVBoxLayout(self.home_page)
+        
+        # Logo
+        logo_label = QLabel()
+        logo_pixmap = QPixmap("images/logo_optizoignon.png")
+        scaled_logo = logo_pixmap.scaled(500, 500, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        logo_label.setPixmap(scaled_logo)
+        logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # Conteneur principal
+        main_container = QWidget()
+        grid_layout = QGridLayout(main_container)
+        grid_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # DropZone
+        self.drop_zone = DropZoneWidget(self)
+        self.drop_zone.setFixedSize(400, 200)
+        self.drop_zone.json_imported.connect(self.handle_json_import)
+        grid_layout.addWidget(self.drop_zone, 0, 0, Qt.AlignmentFlag.AlignCenter)
+        
+        # Boutons
+        buttons_container = QWidget()
+        buttons_layout = QVBoxLayout(buttons_container)
+        button_style = """
+        QPushButton {
+        font-size: 18px;
+        padding: 10px 20px;
+        min-width: 200px;
+        color: white;
+        background-color: #333333;
+        }
+        """
+        buttons = [
+            ("Liste des Monstres", self.show_monster_list),
+            ("Gestion des runes", self.show_monster_list),
+            ("Gestion des artéfacts", self.show_monster_list),
+            ("Optimisation des teams", self.show_monster_list)
+        ]
+        
+        for text, callback in buttons:
+            button = QPushButton(text)
+            button.clicked.connect(callback)
+            button.setStyleSheet(button_style)
+            buttons_layout.addWidget(button)
+        
+        grid_layout.addWidget(buttons_container, 1, 0, Qt.AlignmentFlag.AlignCenter)
+        
+        # Assemblage final
+        layout.addStretch(1)
+        layout.addWidget(logo_label)
+        layout.addWidget(main_container)
+        layout.addStretch(2)
 
     def setup_list_page(self):
         layout = QVBoxLayout(self.list_page)
 
         # Barre d'outils supérieure
         toolbar = QHBoxLayout()
+        
+        # Bouton retour vers l'accueil
+        back_button = QPushButton("Retour à l'accueil")
+        back_button.clicked.connect(self.show_home_page)
+        toolbar.addWidget(back_button)
         
         # Filtres
         filter_group = QHBoxLayout()
@@ -104,6 +198,9 @@ class MainWindow(QMainWindow):
 
     def show_monster_list(self):
         self.stacked_widget.setCurrentWidget(self.list_page)
+
+    def show_home_page(self):
+        self.stacked_widget.setCurrentWidget(self.home_page)
 
     def toggle_theme(self):
         if self.theme_button.text() == "Thème Sombre":
