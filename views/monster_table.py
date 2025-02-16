@@ -23,7 +23,7 @@ class MonsterTable(QTableWidget):
             if i == 0:  # Colonne image du monstre
                 header.setSectionResizeMode(i, QHeaderView.ResizeMode.Fixed)
                 self.setColumnWidth(0, 150)
-            elif i == 9:  # Colonne élément
+            elif i == 10:  # Colonne élément
                 header.setSectionResizeMode(i, QHeaderView.ResizeMode.Fixed)
                 self.setColumnWidth(i, 40)  # Largeur fixe pour l'icône d'élément
             else:

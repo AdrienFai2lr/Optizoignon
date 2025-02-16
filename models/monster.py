@@ -1,15 +1,24 @@
 class Monster:
     def __init__(self, data):
-        self.name = data[0]
-        self.stars = data[1]
-        self.hp = data[2]
-        self.attack = data[3]
-        self.defense = data[4]
-        self.speed = data[5]
-        self.crit_rate = data[6]
-        self.crit_damage = data[7]
-        self.element = data[8]
-        self.image_filename = data[9] if len(data) > 9 else None  # Ajout de l'image_filename
+        self.id = data[0]
+        self.name = data[1]
+        self.stars = data[2]
+        self.hp = data[3]
+        self.attack = data[4]
+        self.defense = data[5]
+        self.speed = data[6]
+        self.crit_rate = data[7]
+        self.crit_damage = data[8]
+        self.element = data[9]
+        self.image_filename = data[10]
+        self.resistance = data[11]
+        self.accuracy = data[12]
+        self.skills = []  # Liste qui contiendra les skills
+    
+    def set_skills(self, skills):
+        self.skills = skills
+        print(f"✅ Monster {self.name} now has {len(self.skills)} skills: {self.skills}")  # Ajout debug
+
     @property
     def stars_display(self):
         return "★" * self.stars

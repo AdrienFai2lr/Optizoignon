@@ -145,7 +145,7 @@ class MainWindow(QMainWindow):
         
         # Filtre classe
         self.filter_class = QComboBox()
-        self.filter_class.addItems(["Toutes", "4★", "5★"])
+        self.filter_class.addItems(["Toutes","1★","2★", "3★","4★", "5★"])
         self.filter_class.currentTextChanged.connect(self.apply_filters)
         filter_group.addWidget(QLabel("Classe:"))
         filter_group.addWidget(self.filter_class)
