@@ -5,8 +5,8 @@ import os
 
 class MonsterTable(QTableWidget):
     def __init__(self):
-        super().__init__()
-        self.image_dir = "images/monsters/"
+        super().__init__() 
+        self.image_dir = "images/monsters/" # Chemin pour les images de monstres
         self.element_dir = "images/elements/"  # Chemin pour les images d'éléments
         self.monsters = []
         self.setup_table()

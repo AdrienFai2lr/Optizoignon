@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap, QPainter, QCursor, QFont
+from controllers.skills_controler import SkillsController, DatabaseError
 
 @dataclass
 class SkillData:
@@ -18,47 +19,7 @@ class SkillData:
     cooldown: Optional[int] = None
     icon_filename: Optional[str] = None
     level_progress_description: Optional[str] = None
-
-class RuneLabel(QLabel):
-    """Widget for displaying individual runes with click interaction"""
     
-    def __init__(self, rune_number: int):
-        super().__init__()
-        self.base_pixmap: Optional[QPixmap] = None
-        self.overlay_pixmap: Optional[QPixmap] = None
-        self.rune_number = rune_number
-        
-        self._load_rune_image()
-        self._setup_ui()
-    
-    def _load_rune_image(self):
-        """Load the rune image from the filesystem"""
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(current_dir)
-        rune_path = os.path.join(project_root, "images", "runes", f"rune{self.rune_number}.png")
-        
-        if os.path.exists(rune_path):
-            self.base_pixmap = QPixmap(rune_path)
-            self.base_pixmap = self.base_pixmap.scaled(
-                60, 60,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation
-            )
-    
-    def _setup_ui(self):
-        """Configure UI properties of the rune label"""
-        self.setFixedSize(60, 60)
-        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.setToolTip(f"Click to view rune {self.rune_number} details")
-
-    def mousePressEvent(self, event):
-        """Handle mouse press events"""
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.show_rune_details()
-
-    def show_rune_details(self):
-        """Display detailed information about the rune"""
-        print(f"Rune {self.rune_number} details")  # Placeholder for actual implementation
 
     def paintEvent(self, event):
         """Custom paint event to handle base and overlay pixmaps"""
@@ -69,13 +30,44 @@ class RuneLabel(QLabel):
                 painter.drawPixmap(self.rect(), self.overlay_pixmap)
             painter.end()
 
-class SkillFrame(QFrame):
-    """Frame widget for displaying skill information"""
-    
-    def __init__(self, skill_data: SkillData):
+class SkillFrame(QLabel):
+    def __init__(self, skill):
         super().__init__()
-        self.skill_data = skill_data
-        self._setup_ui()
+        self.setFixedSize(40, 40)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # Configurer le tooltip avec la description du skill
+        self.setToolTip(skill.description)
+        
+        # Charger l'icône
+        if skill.icon_filename:
+            icon_path = os.path.join("images", "skills", skill.icon_filename)
+            if os.path.exists(icon_path):
+                pixmap = QPixmap(icon_path)
+                scaled_pixmap = pixmap.scaled(
+                    40, 40, 
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation
+                )
+                self.setPixmap(scaled_pixmap)
+            else:
+                self.setText("?")
+                self.setStyleSheet("""
+                    QLabel {
+                        background-color: #f0f0f0;
+                        border: 1px solid #ddd;
+                        border-radius: 5px;
+                    }
+                """)
+        else:
+            self.setText("?")
+            self.setStyleSheet("""
+                QLabel {
+                    background-color: #f0f0f0;
+                    border: 1px solid #ddd;
+                    border-radius: 5px;
+                }
+            """)
     
     def _setup_ui(self):
         """Initialize and setup the UI components"""
@@ -188,7 +180,8 @@ class MonsterDetailView(QWidget):
         super().__init__()
         self.main_window = main_window
         self.stat_labels = {}
-        self.rune_labels = []
+        self.skills_controller = SkillsController()
+        
         self.init_ui()
     
     def init_ui(self):
@@ -237,7 +230,7 @@ class MonsterDetailView(QWidget):
         content_layout.setSpacing(20)
         
         self._setup_left_section(content_layout)
-        self._setup_right_section(content_layout)
+        
         
         scroll_layout.addLayout(content_layout)
         scroll_area.setWidget(scroll_widget)
@@ -283,51 +276,8 @@ class MonsterDetailView(QWidget):
         self.skills_layout.addWidget(QLabel("Skills"))
         layout.addLayout(self.skills_layout)
     
-    def _setup_right_section(self, layout: QHBoxLayout):
-        """Setup the right section with runes and artifacts"""
-        right_section = QVBoxLayout()
-        right_section.setSpacing(10)
-        
-        self._setup_runes_frame(right_section)
-        self._setup_artifacts_frame(right_section)
-        
-        layout.addLayout(right_section, 1)
+
     
-    def _setup_runes_frame(self, layout: QVBoxLayout):
-        """Setup the runes display frame"""
-        runes_frame = QFrame()
-        runes_layout = QGridLayout(runes_frame)
-        runes_layout.setSpacing(0)
-        
-        rune_positions = [
-            (0, 2), (1, 4), (3, 4),
-            (4, 2), (3, 0), (1, 0)
-        ]
-        
-        for i, pos in enumerate(rune_positions):
-            rune_label = RuneLabel(i + 1)
-            self.rune_labels.append(rune_label)
-            runes_layout.addWidget(rune_label, pos[0], pos[1])
-        
-        for i in range(5):
-            for j in range(5):
-                if not runes_layout.itemAtPosition(i, j):
-                    spacer = QLabel()
-                    spacer.setFixedSize(80, 80)
-                    runes_layout.addWidget(spacer, i, j)
-        
-        runes_layout.setContentsMargins(-10, -10, -10, -10)
-        layout.addWidget(runes_frame)
-        layout.addStretch()
-    
-    def _setup_artifacts_frame(self, layout: QVBoxLayout):
-        """Setup the artifacts display frame"""
-        artifacts_frame = QFrame()
-        artifacts_frame.setFrameStyle(QFrame.Shape.Box)
-        artifacts_layout = QVBoxLayout(artifacts_frame)
-        artifacts_layout.addWidget(QLabel("Type Artifact"))
-        artifacts_layout.addWidget(QLabel("Element Artifact"))
-        layout.addWidget(artifacts_frame)
 
     def update_monster(self, monster):
         """Update the display with monster data
@@ -339,6 +289,7 @@ class MonsterDetailView(QWidget):
         self._update_monster_info(monster)
         self._update_monster_stats(monster)
         self._update_monster_skills(monster)
+        
     
     def _update_monster_image(self, monster):
         """Update the monster's image"""
@@ -372,40 +323,30 @@ class MonsterDetailView(QWidget):
                 self.stat_labels[stat].setText(str(value))
     
     def _update_monster_skills(self, monster):
-        """Update the monster's skills display
-        
-        Args:
-            monster: Monster object containing skills information
-        """
-        # Clear existing skills
-        print("🟢 _update_monster_skills called")  # Vérification 1
+        skills = self.skills_controller.get_skills_by_monster_id(monster.id)
+        monster.skills = skills  # Met à jour l'objet monster avec ses skills
 
+        # Nettoyer les widgets existants
         for i in reversed(range(self.skills_layout.count())):
             widget = self.skills_layout.itemAt(i).widget()
             if widget:
                 widget.deleteLater()
 
         # Add skills section title
+        # Ajouter le titre
         title = QLabel("Skills")
         title.setFont(QFont("Arial", 12, QFont.Weight.Bold))
         self.skills_layout.addWidget(title)
-        
-        # Add skill frames for each skill
-        if hasattr(monster, 'skills'):
-            
-            for skill in monster.skills:
-                skill_frame = SkillFrame(skill)
-                self.skills_layout.addWidget(skill_frame)
-                print(skill_frame) 
-
-        if not hasattr(monster, 'skills'):
-            print("❌ Monster object has no 'skills' attribute")
-            return
-
-        if not monster.skills:
-            print("❌ Monster has no skills to display")
-            return
-
+       
+        print(f"🔍 Checking skills for monster {monster.name}")
+        print(f"🔍 Checking skills for monster {monster.id}")
+        print(f"📊 Skills attribute exists: {hasattr(monster, 'skills')}")
+        print(f"📊 Number of skills: {len(monster.skills) if hasattr(monster, 'skills') else 0}")
+       # Afficher les skills
+        for skill in skills:
+            skill_frame = SkillFrame(skill)
+            self.skills_layout.addWidget(skill_frame)
+            print(skill_frame)
 
     def return_to_list(self):
         """Return to the monster list view"""
@@ -426,8 +367,3 @@ class MonsterDetailView(QWidget):
             widget = self.skills_layout.itemAt(i).widget()
             if widget:
                 widget.deleteLater()
-                
-        # Clear rune overlays
-        for rune_label in self.rune_labels:
-            rune_label.overlay_pixmap = None
-            rune_label.update()

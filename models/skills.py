@@ -5,7 +5,11 @@ class Skill:
         self.description = data[2]
         self.cooldown = data[3]
         self.hits = data[4]
-        self.aoe = bool(data[5])
-        self.passive = bool(data[6])
-        self.icon_filename = data[7]
-        self.level_progress_description = data[8]
+        self.multiplier_formula = data[5]
+        self.aoe = data[6]
+        self.passive = data[7]
+        self.icon_filename = data[8]
+        self.level_progress_description = data[9]
+        
+    def __str__(self):
+        return f"{self.name} (ID: {self.id})"
