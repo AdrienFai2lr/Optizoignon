@@ -6,7 +6,7 @@ from PyQt6.QtGui import QPixmap
 from .gestionMonstres.monster_detail import MonsterDetailView
 from .gestionMonstres.monster_table import MonsterTable
 from controllers.monster_controller import MonsterController, DatabaseError
-from .dropJson import DropZoneWidget
+from .gestionJson.dropJson import DropZoneWidget
 from PyQt6.QtWidgets import QGridLayout
 
 class MainWindow(QMainWindow):
