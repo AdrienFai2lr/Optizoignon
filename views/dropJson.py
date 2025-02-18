@@ -37,7 +37,7 @@ class DropZoneWidget(QWidget):
         self.button.clicked.connect(self.open_file_dialog)
         layout.addWidget(self.button, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.setContentsMargins(20, 20, 20, 20)  # marges
-        layout.setSpacing(10)  # espace entre widgets
+        layout.setSpacing(5)  # espace entre widgets
         
 
     def dragEnterEvent(self, event: QDragEnterEvent):
@@ -73,6 +73,7 @@ class DropZoneWidget(QWidget):
             self.label.setText("Erreur: Le fichier n'est pas un JSON valide")
         except Exception as e:
             self.label.setText(f"Erreur lors de l'importation:\n{str(e)}")
+    
 
     def reset_state(self):
         """Réinitialise l'état de la zone de dépôt"""

@@ -3,8 +3,8 @@ from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout,
                            QStackedWidget)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
-from .monster_detail import MonsterDetailView
-from .monster_table import MonsterTable
+from .gestionMonstres.monster_detail import MonsterDetailView
+from .gestionMonstres.monster_table import MonsterTable
 from controllers.monster_controller import MonsterController, DatabaseError
 from .dropJson import DropZoneWidget
 from PyQt6.QtWidgets import QGridLayout

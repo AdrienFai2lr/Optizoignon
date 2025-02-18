@@ -27,8 +27,6 @@ class SkillsController:
             cursor.execute(skills_query, (monster_id,))
             skills_data = cursor.fetchall()
             
-            print(f"🔢 Found {len(skills_data)} skills for monster ID {monster_id}")
-            
             return [Skill(skill_data) for skill_data in skills_data]
             
         except mysql.connector.Error as err:
