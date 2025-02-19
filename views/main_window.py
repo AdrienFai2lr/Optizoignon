@@ -3,8 +3,11 @@ from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout,
                            QStackedWidget)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
+
 from .gestionMonstres.monster_detail import MonsterDetailView
 from .gestionMonstres.monster_table import MonsterTable
+from .gestionRunes.runes_table import RuneTable
+from controllers.runes_controller import RuneController
 from controllers.monster_controller import MonsterController, DatabaseError
 from .gestionJson.dropJson import DropZoneWidget
 from PyQt6.QtWidgets import QGridLayout
@@ -13,6 +16,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.monster_controller = MonsterController()
+        self.rune_controller = RuneController()  # Ajout du contrôleur de runes
         self.setWindowTitle("OPTIZ-oignoin - Gestion de monstres")
         self.setMinimumSize(1200, 800)
         self.init_ui()
@@ -41,9 +45,102 @@ class MainWindow(QMainWindow):
         self.stacked_widget.addWidget(self.detail_view)
         
         self.main_layout.addWidget(self.stacked_widget)
+
+        # Page liste des runes
+        self.runes_page = QWidget()
+        self.setup_runes_page()
+        self.stacked_widget.addWidget(self.runes_page)
+        
+        self.main_layout.addWidget(self.stacked_widget)
         
         # Définir la page d'accueil comme page par défaut
         self.stacked_widget.setCurrentWidget(self.home_page)
+
+    def setup_runes_page(self):
+        layout = QVBoxLayout(self.runes_page)
+
+        # Barre d'outils supérieure
+        toolbar = QHBoxLayout()
+        
+        # Bouton retour vers l'accueil
+        back_button = QPushButton("Retour à l'accueil")
+        back_button.clicked.connect(self.show_home_page)
+        toolbar.addWidget(back_button)
+        
+        # Filtres
+        filter_group = QHBoxLayout()
+        
+        # Filtre set de runes
+        self.filter_rune_set = QComboBox()
+        sets = ["Tous"] + [f"{name}" for id, name in self.rune_controller.rune_sets.items()]
+        self.filter_rune_set.addItems(sets)
+        self.filter_rune_set.currentTextChanged.connect(self.apply_rune_filters)
+        filter_group.addWidget(QLabel("Set:"))
+        filter_group.addWidget(self.filter_rune_set)
+        
+        # Filtre slot
+        self.filter_slot = QComboBox()
+        self.filter_slot.addItems(["Tous"] + [str(i) for i in range(1, 7)])
+        self.filter_slot.currentTextChanged.connect(self.apply_rune_filters)
+        filter_group.addWidget(QLabel("Slot:"))
+        filter_group.addWidget(self.filter_slot)
+        
+        toolbar.addLayout(filter_group)
+        toolbar.addStretch()
+        
+        # Bouton thème
+        theme_button = QPushButton("Thème Sombre")
+        theme_button.clicked.connect(self.toggle_theme)
+        toolbar.addWidget(theme_button)
+        
+        layout.addLayout(toolbar)
+        
+        # Table des runes
+        self.rune_table = RuneTable()
+        self.rune_table.cellDoubleClicked.connect(self.show_rune_detail)
+        layout.addWidget(self.rune_table)
+        
+        # Barre d'état
+        self.statusBar().showMessage("Chargement des runes...")
+
+    def load_runes(self):
+        """Charge toutes les runes depuis la base de données"""
+        try:
+            # Utilisez un ID de wizard fixe pour le moment
+            wizard_id = 9215591  # À remplacer par l'ID réel de l'utilisateur
+            runes = self.rune_controller.get_runes(wizard_id)
+            self.rune_table.update_runes(runes)
+            self.statusBar().showMessage(f"{len(runes)} runes chargées")
+        except DatabaseError as err:
+            self.statusBar().showMessage(str(err))
+
+    def apply_rune_filters(self):
+        """Applique les filtres sur la liste des runes"""
+        try:
+            wizard_id = 1  # À remplacer par l'ID réel de l'utilisateur
+            set_filter = self.filter_rune_set.currentText()
+            slot_filter = self.filter_slot.currentText()
+            
+            runes = self.rune_controller.get_runes(
+                wizard_id=wizard_id,
+                set_filter=set_filter if set_filter != "Tous" else None,
+                slot_filter=slot_filter if slot_filter != "Tous" else None
+            )
+            
+            self.rune_table.update_runes(runes)
+            self.statusBar().showMessage(f"{len(runes)} runes affichées")
+        except DatabaseError as err:
+            self.statusBar().showMessage(str(err))
+
+    def show_rune_detail(self, row, column):
+        """Affiche les détails d'une rune"""
+        rune = self.rune_table.get_rune(row)
+        if rune:
+            # Pour l'instant, on affiche juste un message dans la barre d'état
+            self.statusBar().showMessage(f"Détails de la rune {rune.id} (à implémenter)")
+            # Plus tard, vous pourrez créer une vue détaillée comme pour les monstres
+            # self.rune_detail_view.update_rune(rune)
+            # self.stacked_widget.setCurrentWidget(self.rune_detail_view)
 
     def handle_json_import(self, data):
         """Gère l'importation des données JSON"""
@@ -103,7 +200,7 @@ class MainWindow(QMainWindow):
         """
         buttons = [
             ("Liste des Monstres", self.show_monster_list),
-            ("Gestion des runes", self.show_monster_list),
+            ("Gestion des runes", self.show_runes_list),
             ("Gestion des artéfacts", self.show_monster_list),
             ("Optimisation des teams", self.show_monster_list)
         ]
@@ -198,6 +295,11 @@ class MainWindow(QMainWindow):
 
     def show_monster_list(self):
         self.stacked_widget.setCurrentWidget(self.list_page)
+    
+    def show_runes_list(self):
+        """Affiche la page de liste des runes"""
+        self.load_runes()  # Charge les runes au moment d'afficher la page
+        self.stacked_widget.setCurrentWidget(self.runes_page)
 
     def show_home_page(self):
         self.stacked_widget.setCurrentWidget(self.home_page)
