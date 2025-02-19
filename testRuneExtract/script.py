@@ -2,18 +2,12 @@ import json
 from datetime import datetime
 import sys
 import logging
+import os
+import math
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-def get_equipped_status(rune_data):
-    """Retourne un commentaire sur l'état d'équipement de la rune"""
-    if rune_data.get('occupied_type') == 1:
-        return f"Équipée sur le monstre {rune_data.get('occupied_id')}"
-    elif rune_data.get('occupied_type') == 2:
-        return "Dans le stockage"
-    return "État inconnu"
 
 def get_rune_quality(rank):
     """Détermine la qualité de la rune basée sur son rang"""
@@ -37,261 +31,263 @@ def get_rune_grade(rank):
     }
     return grade_mapping.get(rank, 'normal')
 
+def get_stat_code(stat_id):
+    """Retourne le code de stat basé sur l'ID"""
+    stat_type_mapping = {
+        1: 'HP_FLAT',
+        2: 'HP_PCT',
+        3: 'ATK_FLAT',
+        4: 'ATK_PCT',
+        5: 'DEF_FLAT',
+        6: 'DEF_PCT',
+        8: 'SPD',
+        9: 'CRIT_RATE',
+        10: 'CRIT_DMG',
+        11: 'RES',
+        12: 'ACC'
+    }
+    return stat_type_mapping.get(stat_id, 'HP_FLAT')
+
 def validate_rune_data(rune_data):
     """Valide les données de base d'une rune"""
     required_fields = ['rune_id', 'wizard_id', 'slot_no', 'rank', 'class', 'set_id', 'pri_eff']
     return all(field in rune_data for field in required_fields)
 
-def is_ancient_rune(rune):
-    """Détermine si une rune est ancienne basée sur son rank"""
-    return rune.get('rank') == 15 and rune.get('class') == 16
+def generate_rune_upgrades(rune_data, upgrade_count, is_ancient):
+    """Génère les enregistrements d'upgrade pour une rune"""
+    upgrades = []
+    if upgrade_count > 0:
+        for substat in rune_data.get('sec_eff', []):
+            if len(substat) > 3 and substat[2] > 0:  # Si la stat a été améliorée
+                upgrade_count = substat[2]
+                initial_value = substat[1] - substat[3]  # Valeur initiale
+                value_per_upgrade = substat[3] / upgrade_count
 
-def validate_rune_data(rune_data):
-    """Valide les données de base d'une rune"""
-    required_fields = ['rune_id', 'wizard_id', 'slot_no', 'rank', 'class', 'set_id', 'pri_eff']
-    return all(field in rune_data for field in required_fields)
+                for i in range(upgrade_count):
+                    level = (i + 1) * 3  # Niveaux 3, 6, 9, 12
+                    old_value = initial_value + (i * value_per_upgrade)
+                    new_value = initial_value + ((i + 1) * value_per_upgrade)
+                    
+                    upgrade_query = f"""
+INSERT INTO rune_upgrades 
+(rune_id, level_reached, stat_type_id, old_value, new_value, upgrade_date)
+SELECT 
+    @last_rune_id,
+    {level},
+    (SELECT id FROM stat_types WHERE code = '{get_stat_code(substat[0])}'),
+    {old_value},
+    {new_value},
+    NOW();"""
+                    upgrades.append(upgrade_query)
+    return upgrades
 
-def extract_runes_from_monsters(data):
-    """Extrait toutes les runes équipées sur les monstres"""
-    all_runes = []
-    monster_count = 0
-    runes_per_monster = {}
-    normal_runes_count = 0
-    ancient_runes_count = 0
-    monsters_with_ancient = []
-    
-    if 'unit_list' not in data:
-        logger.warning("Aucune liste de monstres trouvée dans les données")
-        return all_runes
-        
-    for monster in data.get('unit_list', []):
-        monster_count += 1
-        monster_id = monster.get('unit_id')
-        monster_name = monster.get('unit_master_id', 'Unknown')
-        runes = monster.get('runes', [])
-        normal_count = 0
-        ancient_count = 0
-        
-        for rune in runes:
-            if validate_rune_data(rune):
-                if is_ancient_rune(rune):
-                    ancient_count += 1
-                    ancient_runes_count += 1
-                else:
-                    normal_count += 1
-                    normal_runes_count += 1
-                all_runes.append(rune)
-            else:
-                logger.warning(f"Rune invalide trouvée sur le monstre {monster_id}")
-        
-        if ancient_count > 0:
-            monsters_with_ancient.append((monster_name, monster_id, ancient_count))
-        
-        runes_per_monster[monster_id] = normal_count + ancient_count
-    
-    logger.info(f"Nombre total de monstres analysés: {monster_count}")
-    logger.info(f"Runes normales équipées: {normal_runes_count}")
-    logger.info(f"Runes anciennes équipées: {ancient_runes_count}")
-    
-    if monsters_with_ancient:
-        logger.info("\nMonstres avec des runes anciennes:")
-        for monster_name, monster_id, count in monsters_with_ancient:
-            logger.info(f"- Monstre {monster_name} (ID: {monster_id}): {count} runes anciennes")
-    
-    logger.info("\nTop 5 des monstres avec le plus de runes:")
-    for monster_id, count in sorted(runes_per_monster.items(), key=lambda x: x[1], reverse=True)[:5]:
-        logger.info(f"- Monstre {monster_id}: {count} runes")
-                
-    return all_runes
-
-def generate_sql_queries(rune_data):
+def generate_rune_inserts(rune_data, unit_master_id=None):
     """Génère les requêtes SQL pour une rune et ses sous-stats"""
     try:
-        # Normalisation des valeurs avec validation
+        # Déterminer si c'est une rune antique
+        is_ancient = rune_data.get('rank') == 15 and rune_data.get('class') == 16
+        
+        # Déterminer la qualité basée sur le rang
         normalized_rank = min(max(1, rune_data.get('rank', 5)), 5)
-        normalized_class = min(max(1, rune_data.get('class', 6)), 6)
+        if is_ancient:
+            normalized_rank = 5  # Les runes antiques sont toujours légendaires
+            
         quality = get_rune_quality(normalized_rank)
         grade = get_rune_grade(normalized_rank)
+        upgrade_count = rune_data.get('upgrade_curr', 0)
+
+        queries = []
         
-        # Gestion explicite de occupied_type et occupied_id avec valeurs par défaut
-        occupied_type = rune_data.get('occupied_type', 0)
-        occupied_id = rune_data.get('occupied_id', 0)
-        
-        equipped_status = get_equipped_status(rune_data)
-        
-        rune_query = f"""-- État: {equipped_status}
+        # Vérification des contraintes de slot
+        verify_slot_query = f"""
+SET @valid_slot = (
+    SELECT COUNT(*) 
+    FROM slot_stat_constraints 
+    WHERE slot_no = {rune_data['slot_no']} 
+    AND stat_type_id = (SELECT id FROM stat_types WHERE code = '{get_stat_code(rune_data['pri_eff'][0])}')
+);"""
+        queries.append(verify_slot_query)
+
+        # INSERT principal pour la rune
+        rune_query = f"""
 INSERT INTO runes 
-        (rune_id, wizard_id, occupied_type, occupied_id, slot_no, 
-         `rank`, `class`, set_id, upgrade_limit, upgrade_curr,
-         base_value, sell_value, pri_eff_type, pri_eff_value,
-         prefix_eff_type, prefix_eff_value, quality,
-         level, original_grade, current_grade, original_quality, locked)
-    VALUES 
-        ({rune_data['rune_id']}, 
-         {rune_data['wizard_id']}, 
-         {occupied_type}, 
-         {occupied_id}, 
-         {rune_data['slot_no']},
-         {normalized_rank}, 
-         {normalized_class}, 
-         {rune_data['set_id']}, 
-         {rune_data.get('upgrade_limit', 15)}, 
-         {rune_data.get('upgrade_curr', 0)},
-         {rune_data.get('base_value', 0)}, 
-         {rune_data.get('sell_value', 0)}, 
-         {rune_data['pri_eff'][0]}, 
-         {rune_data['pri_eff'][1]},
-         {rune_data.get('prefix_eff', [0, 0])[0]}, 
-         {rune_data.get('prefix_eff', [0, 0])[1]}, 
-         '{quality}',
-         {rune_data.get('upgrade_curr', 0)},
-         '{grade}',
-         '{grade}',
-         {normalized_rank},
-         {rune_data.get('locked', 0)});"""
-        
-        get_id_query = "SET @last_rune_id = LAST_INSERT_ID();\n"
-        
-        substat_queries = []
+(rune_id, wizard_id, occupied_type, occupied_id, slot_no, `rank`, 
+ `class`, set_id, upgrade_limit, upgrade_curr, base_value, sell_value, 
+ pri_eff_type, pri_eff_value, prefix_eff_type, prefix_eff_value, 
+ quality, level, original_grade, current_grade, original_quality, locked)
+VALUES 
+({rune_data['rune_id']}, 
+ {rune_data['wizard_id']}, 
+ {rune_data.get('occupied_type', 0)}, 
+ {rune_data.get('occupied_id', 0)}, 
+ {rune_data['slot_no']},
+ {rune_data['rank']}, 
+ {rune_data['class']}, 
+ {rune_data['set_id']}, 
+ {rune_data.get('upgrade_limit', 15)}, 
+ {upgrade_count},
+ {rune_data.get('base_value', 0)}, 
+ {rune_data.get('sell_value', 0)}, 
+ (SELECT id FROM stat_types WHERE code = '{get_stat_code(rune_data['pri_eff'][0])}'), 
+ {rune_data['pri_eff'][1]},
+ (SELECT id FROM stat_types WHERE code = '{get_stat_code(rune_data.get('prefix_eff', [0])[0])}'), 
+ {rune_data.get('prefix_eff', [0, 0])[1]}, 
+ '{quality}',
+ {upgrade_count},
+ '{grade}',
+ '{grade}',
+ {normalized_rank},
+ 0);
+
+SET @last_rune_id = LAST_INSERT_ID();"""
+        queries.append(rune_query)
+
+        # INSERT pour les sous-stats
         for substat in rune_data.get('sec_eff', []):
-            if len(substat) >= 2:  # Validation minimale des sous-stats
+            if len(substat) >= 2:
                 initial_value = substat[1] - (substat[3] if len(substat) > 3 else 0)
-                substat_query = f"""INSERT INTO rune_substats 
-                    (rune_id, stat_type, stat_value, upgrade_count, initial_value)
-                VALUES 
-                    (@last_rune_id, 
-                     {substat[0]}, 
-                     {substat[1]}, 
-                     {substat[2] if len(substat) > 2 else 0}, 
-                     {initial_value});"""
-                substat_queries.append(substat_query)
-        
-        return rune_query, get_id_query, substat_queries
+                upgrade_count = substat[2] if len(substat) > 2 else 0
+                
+                substat_query = f"""
+INSERT INTO rune_substats 
+(rune_id, stat_type_id, stat_value, upgrade_count, initial_value)
+SELECT 
+    @last_rune_id, 
+    (SELECT id FROM stat_types WHERE code = '{get_stat_code(substat[0])}'),
+    {substat[1]},
+    {upgrade_count},
+    {initial_value}
+WHERE EXISTS (
+    SELECT 1 FROM rune_stat_ranges 
+    WHERE stat_type_id = (SELECT id FROM stat_types WHERE code = '{get_stat_code(substat[0])}')
+    AND is_ancient = {1 if is_ancient else 0}
+    AND {initial_value} BETWEEN substat_initial_min AND substat_initial_max
+);"""
+                queries.append(substat_query)
+
+        # Génération des enregistrements d'upgrades
+        upgrades = generate_rune_upgrades(rune_data, upgrade_count, is_ancient)
+        queries.extend(upgrades)
+
+        # INSERT pour monster_runes si la rune est équipée
+        if rune_data.get('occupied_type') == 1 and unit_master_id:
+            monster_rune_query = f"""
+-- Supprimer toute rune existante dans ce slot pour ce monstre
+DELETE FROM monster_runes 
+WHERE monster_id = (SELECT id FROM monsters WHERE com2us_id = {unit_master_id})
+AND slot_number = {rune_data['slot_no']};
+
+-- Insérer la nouvelle association rune-monstre
+INSERT INTO monster_runes (monster_id, rune_id, slot_number)
+SELECT 
+    (SELECT id FROM monsters WHERE com2us_id = {unit_master_id}), 
+    @last_rune_id, 
+    {rune_data['slot_no']}
+WHERE EXISTS (SELECT 1 FROM monsters WHERE com2us_id = {unit_master_id});"""
+            queries.append(monster_rune_query)
+
+        return queries
+
     except Exception as e:
         logger.error(f"Erreur lors de la génération des requêtes SQL pour la rune {rune_data.get('rune_id')}: {str(e)}")
-        return None, None, []
+        return []
+
+def write_sql_file(queries, file_path, include_transaction=True, is_first_file=False):
+    """Écrit les requêtes SQL dans un fichier"""
+    with open(file_path, 'w', encoding='utf-8') as f:
+        if include_transaction:
+            f.write("START TRANSACTION;\n\n")
+            
+            # Ajoute les DELETE uniquement dans le premier fichier
+            if is_first_file:
+                f.write("-- Suppression des données existantes\n")
+                f.write("DELETE FROM monster_runes;\n")
+                f.write("DELETE FROM rune_upgrades;\n")
+                f.write("DELETE FROM rune_substats;\n")
+                f.write("DELETE FROM runes;\n\n")
+        
+        for query in queries:
+            f.write(query + "\n")
+            
+        if include_transaction:
+            f.write("\nCOMMIT;\n")
+
+def create_split_insert_sql(data_json, base_output_path, num_files=4):
+    """Crée plusieurs fichiers SQL avec les INSERT divisés"""
+    try:
+        # Extraire toutes les runes
+        all_runes = []
+        
+        # 1. Runes non équipées et runes antiques
+        all_runes.extend(data_json.get('runes', []))
+        all_runes.extend(data_json.get('ancient_runes', []))
+        
+        # 2. Runes équipées depuis la liste des monstres
+        if 'unit_list' in data_json:
+            for monster in data_json['unit_list']:
+                unit_master_id = monster.get('unit_master_id')
+                if monster.get('runes'):
+                    for rune in monster.get('runes', []):
+                        if validate_rune_data(rune):
+                            # On associe le unit_master_id à la rune
+                            rune['unit_master_id'] = unit_master_id
+                            all_runes.append(rune)
+
+        # Éliminer les doublons potentiels basés sur rune_id
+        unique_runes = {rune['rune_id']: rune for rune in all_runes}.values()
+        all_runes = list(unique_runes)
+
+        runes_per_file = math.ceil(len(all_runes) / num_files)
+        
+        for i in range(num_files):
+            start_idx = i * runes_per_file
+            end_idx = min((i + 1) * runes_per_file, len(all_runes))
+            
+            file_queries = []
+            runes_subset = all_runes[start_idx:end_idx]
+            
+            for rune in runes_subset:
+                if validate_rune_data(rune):
+                    file_queries.append(f"-- Rune ID: {rune['rune_id']}")
+                    queries = generate_rune_inserts(rune, rune.get('unit_master_id'))
+                    file_queries.extend(queries)
+                    file_queries.append("")
+            
+            output_file = f"{base_output_path}_part{i+1}.sql"
+            write_sql_file(file_queries, output_file, is_first_file=(i==0))
+            logger.info(f"Fichier SQL généré : {output_file}")
+            logger.info(f"Nombre de runes dans le fichier {i+1}: {len(runes_subset)}")
+
+        logger.info(f"Nombre total de runes traitées : {len(all_runes)}")
+
+    except Exception as e:
+        logger.error(f"Erreur lors de la création des fichiers SQL : {str(e)}")
 
 def main():
     try:
-        # Lecture du fichier JSON avec gestion explicite du chemin
         input_file = '../data/donne.json'
         if len(sys.argv) > 1:
             input_file = sys.argv[1]
-            
+
         logger.info(f"Lecture du fichier: {input_file}")
         
         with open(input_file, 'r', encoding='utf-8') as file:
             data = json.load(file)
-            
-        # Collecter toutes les runes (stockage + équipées)
-        all_runes = []
-        
-        # Ajouter les runes normales du stockage
-        if 'runes' in data:
-            logger.info(f"Nombre de runes normales trouvées dans le stockage: {len(data['runes'])}")
-            all_runes.extend(data['runes'])
-        else:
-            logger.warning("Aucune rune normale trouvée dans le stockage (clé 'runes' absente)")
-            
-        # Ajouter les runes anciennes du stockage
-        if 'ancient_runes' in data:
-            logger.info(f"Nombre de runes anciennes trouvées dans le stockage: {len(data.get('ancient_runes', []))}")
-            all_runes.extend(data['ancient_runes'])
-        else:
-            logger.warning("Aucune rune ancienne trouvée dans le stockage (clé 'ancient_runes' absente)")
 
-        # Structure des données pour debug
-        logger.info("Clés disponibles dans les données:")
-        for key in data.keys():
-            logger.info(f"- {key}")
-            
-        # Ajouter les runes équipées sur les monstres
-        equipped_runes = extract_runes_from_monsters(data)
-        all_runes.extend(equipped_runes)
-        
-        if not all_runes:
-            logger.error("Aucune rune trouvée dans le fichier JSON")
-            return
-            
-        # Création du fichier SQL
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        sql_filename = f'runes_import_{timestamp}.sql'
-        
-        # Compteurs pour les statistiques
-        equipped_count = 0
-        storage_count = 0
-        error_count = 0
-        
-        with open(sql_filename, 'w', encoding='utf-8') as sql_file:
-            sql_file.write("START TRANSACTION;\n\n")
-            
-            for rune in all_runes:
-                try:
-                    if not validate_rune_data(rune):
-                        logger.warning(f"Rune invalide ignorée: {rune.get('rune_id')}")
-                        error_count += 1
-                        continue
-                        
-                    # Mise à jour des compteurs
-                    if rune.get('occupied_type') == 1:
-                        equipped_count += 1
-                    elif rune.get('occupied_type') == 2:
-                        storage_count += 1
-                        
-                    rune_query, get_id_query, substat_queries = generate_sql_queries(rune)
-                    
-                    if rune_query:
-                        sql_file.write(f"-- Rune ID: {rune['rune_id']}\n")
-                        sql_file.write(rune_query + "\n")
-                        sql_file.write(get_id_query + "\n")
-                        
-                        if substat_queries:
-                            sql_file.write("-- Sous-stats pour la rune\n")
-                            for query in substat_queries:
-                                sql_file.write(query + "\n")
-                            sql_file.write("\n")
-                    
-                except Exception as e:
-                    logger.error(f"Erreur lors du traitement de la rune {rune.get('rune_id')}: {str(e)}")
-                    error_count += 1
-                    continue
-            
-            sql_file.write("COMMIT;\n")
-            
-        logger.info(f"Fichier SQL généré avec succès : {sql_filename}")
-        logger.info("\nStatistiques détaillées:")
-        logger.info(f"- Runes équipées: {equipped_count}")
-        logger.info(f"- Runes en stockage: {storage_count}")
-        logger.info(f"- Erreurs: {error_count}")
-        logger.info(f"- Total: {equipped_count + storage_count}")
-        
-        # Statistiques sur les slots
-        slot_stats = {}
-        quality_stats = {}
-        set_stats = {}
-        for rune in all_runes:
-            slot_stats[rune.get('slot_no', 0)] = slot_stats.get(rune.get('slot_no', 0), 0) + 1
-            quality_stats[get_rune_quality(rune.get('rank', 1))] = quality_stats.get(get_rune_quality(rune.get('rank', 1)), 0) + 1
-            set_stats[rune.get('set_id', 0)] = set_stats.get(rune.get('set_id', 0), 0) + 1
-        
-        logger.info("\nDistribution par slot:")
-        for slot in sorted(slot_stats.keys()):
-            logger.info(f"- Slot {slot}: {slot_stats[slot]} runes")
-            
-        logger.info("\nDistribution par qualité:")
-        for quality in ['legendary', 'heroic', 'rare']:
-            logger.info(f"- {quality.capitalize()}: {quality_stats.get(quality, 0)} runes")
-            
-        logger.info("\nTop 5 des sets de runes:")
-        for set_id, count in sorted(set_stats.items(), key=lambda x: x[1], reverse=True)[:5]:
-            logger.info(f"- Set {set_id}: {count} runes")
-        
+        os.makedirs('rune_exports', exist_ok=True)
+        base_output_file = f'rune_exports/rune_inserts_{timestamp}'
+
+        create_split_insert_sql(data, base_output_file, num_files=4)
+
     except FileNotFoundError:
         logger.error(f"Erreur: Le fichier {input_file} n'a pas été trouvé")
     except json.JSONDecodeError:
         logger.error("Erreur: Le fichier n'est pas un JSON valide")
     except Exception as e:
         logger.error(f"Erreur inattendue: {str(e)}")
+    finally:
+        logger.info("Fin du traitement")
 
 if __name__ == "__main__":
     main()
