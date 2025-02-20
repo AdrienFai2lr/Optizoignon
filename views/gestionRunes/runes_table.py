@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView, QLabel
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView, QLabel, QWidget, QHBoxLayout
 import os
 
 class RuneTable(QTableWidget):
@@ -36,18 +37,39 @@ class RuneTable(QTableWidget):
         self.setRowCount(len(runes))
         
         for row, rune in enumerate(runes):
-            # Image du set de runes
             if hasattr(rune, 'set_id'):
-                image_path = os.path.join(self.rune_images_dir, f"set_{rune.set_id}.png")
+                set_name = rune.get_set_name()
+                image_path = os.path.join(self.rune_images_dir, f"{set_name}.png")
+                
+                # Créer un widget conteneur pour les images
+                container = QWidget()
+                layout = QHBoxLayout(container)
+                layout.setSpacing(2)
+                layout.setContentsMargins(0, 0, 0, 0)
+                
+                # Ajouter l'image de la rune
                 if os.path.exists(image_path):
-                    label = QLabel()
+                    rune_label = QLabel()
                     pixmap = QPixmap(image_path)
                     scaled_pixmap = pixmap.scaled(40, 40, Qt.AspectRatioMode.KeepAspectRatio)
-                    label.setPixmap(scaled_pixmap)
-                    label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                    self.setCellWidget(row, 0, label)
+                    rune_label.setPixmap(scaled_pixmap)
+                    rune_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                    layout.addWidget(rune_label)
+                    
+                    # Ajouter le symbole ancient si nécessaire
+                    if rune.is_ancient:
+                        ancient_path = os.path.join(self.rune_images_dir, "ancient.png")
+                        if os.path.exists(ancient_path):
+                            ancient_label = QLabel()
+                            ancient_pixmap = QPixmap(ancient_path)
+                            scaled_ancient = ancient_pixmap.scaled(20, 20, Qt.AspectRatioMode.KeepAspectRatio)
+                            ancient_label.setPixmap(scaled_ancient)
+                            ancient_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                            layout.addWidget(ancient_label)
+                    
+                    self.setCellWidget(row, 0, container)
                 else:
-                    item = QTableWidgetItem(f"Set {rune.set_id}")
+                    item = QTableWidgetItem(set_name.capitalize())
                     item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                     self.setItem(row, 0, item)
 
@@ -58,7 +80,7 @@ class RuneTable(QTableWidget):
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                 self.setItem(row, col, item)
 
-    def get_rune(self, row):
-        if 0 <= row < len(self.runes):
-            return self.runes[row]
-        return None
+def get_rune(self, row):
+    if 0 <= row < len(self.runes):
+        return self.runes[row]
+    return None

@@ -21,18 +21,41 @@ class Rune:
         self.original_grade = data[18]
         self.current_grade = data[19]
         self.original_quality = data[20]
-        self.substats = []  # Will be populated later
+        self.substats = []
 
-    def set_substats(self, substats):
-        self.substats = substats
-
-    @property
-    def is_ancient(self):
-        return self.rank == 15 and self.class_ == 16
+    def get_set_name(self):
+        """Retourne le nom du set de runes"""
+        rune_sets = {
+            1: "energy",
+            2: "guard",
+            3: "swift",
+            4: "blade",
+            5: "rage",
+            6: "focus",
+            7: "endure",
+            8: "fatal",
+            10: "despair",
+            11: "vampire",
+            13: "violent",
+            14: "nemesis",
+            15: "will",
+            16: "shield",
+            17: "revenge",
+            18: "destroy",
+            19: "fight",
+            20: "determination",
+            21: "enhance",
+            22: "accuracy",
+            23: "tolerance",
+            24: "seal",  # Nouveau set
+            25: "intangible"  # Nouveau set
+        }
+        return rune_sets.get(self.set_id, "unknown")
 
     def to_table_row(self):
+        """Convert rune data to a table row format"""
         return [
-            f"Set {self.set_id}",
+            self.get_set_name(),  # Nom du set au lieu de "Set X"
             f"+{self.level}",
             str(self.slot_no),
             self.quality,
@@ -40,6 +63,13 @@ class Rune:
             self.get_prefix_stat_display() if self.prefix_eff_type else "",
             self.get_substats_display()
         ]
+
+    def set_substats(self, substats):
+        self.substats = substats
+
+    @property
+    def is_ancient(self):
+        return self.rank == 15 and self.class_ == 16
 
     def get_main_stat_display(self):
         return f"{self.get_stat_type_name(self.pri_eff_type)}: {self.pri_eff_value}"
