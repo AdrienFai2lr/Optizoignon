@@ -5,6 +5,8 @@ from models.runes import Rune, RuneSubstat
 class RuneController:
     def __init__(self):
         self.db_config = DatabaseConfig.get_config()
+        self.stat_types = {}
+        self._load_stat_types()
         
         # Dictionnaire des sets de runes
         self.rune_sets = {
@@ -36,9 +38,12 @@ class RuneController:
         self._base_query = """
             SELECT 
                 r.*,
+                st_pri.name as pri_stat_name,
+                st_pre.name as prefix_stat_name,
                 COUNT(*) OVER() as total_count
             FROM runes r
-            WHERE 1=1
+            LEFT JOIN stat_types st_pri ON r.pri_eff_type = st_pri.id
+            LEFT JOIN stat_types st_pre ON r.prefix_eff_type = st_pre.id
         """
         
         self._substat_query = """
@@ -52,12 +57,38 @@ class RuneController:
             ORDER BY rs.rune_id, rs.upgrade_count DESC
         """
 
+    def _load_stat_types(self):
+        """Charge les types de statistiques depuis la base de données"""
+        conn = None
+        cursor = None
+        try:
+            conn = self._get_db_connection()
+            cursor = conn.cursor()
+            
+            query = "SELECT id, code, name FROM stat_types"
+            cursor.execute(query)
+            
+            for stat_id, code, name in cursor.fetchall():
+                self.stat_types[stat_id] = {'code': code, 'name': name}
+                
+        finally:
+            if cursor:
+                cursor.close()
+            if conn and conn.is_connected():
+                conn.close()
+
     def _get_db_connection(self):
         """Établit une connexion à la base de données en utilisant la configuration"""
         try:
             return mysql.connector.connect(**self.db_config)
         except mysql.connector.Error as err:
             raise Exception(f"Erreur de connexion à la base de données: {err}")
+
+    def get_stat_type_name(self, stat_type_id):
+        """Retourne le nom du type de statistique"""
+        if stat_type_id in self.stat_types:
+            return self.stat_types[stat_type_id]['name']
+        return f"Unknown({stat_type_id})"
 
     def get_runes(self, set_filter=None, slot_filter=None, order_by=None, page=1, per_page=50):
         conn = None
@@ -88,7 +119,7 @@ class RuneController:
             total_count = cursor.fetchone()[0]
             
             # Requête principale pour les runes de la page courante
-            query = self._base_query
+            query = self._base_query + " WHERE 1=1"
             params = []
             
             if set_filter and set_filter != "Tous":

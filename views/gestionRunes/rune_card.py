@@ -13,6 +13,7 @@ class RuneCard(QFrame):
         self.setup_ui()
         
     def setup_ui(self):
+        """Configuration initiale de l'interface utilisateur"""
         self.setFrameStyle(QFrame.Shape.Box | QFrame.Shadow.Raised)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.setMinimumSize(200, 200)
@@ -37,10 +38,12 @@ class RuneCard(QFrame):
             }
         """)
         
+        # Layout principal
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(4, 4, 4, 0)
         self.main_layout.setSpacing(1)
         
+        # Création du contenu de base
         self.create_basic_content()
         
         # Bouton d'expansion
@@ -70,6 +73,7 @@ class RuneCard(QFrame):
         self.main_layout.addWidget(self.details_widget)
         
     def create_basic_content(self):
+        """Création du contenu de base de la carte"""
         # Header avec image et info principale
         header = QWidget()
         header_layout = QHBoxLayout(header)
@@ -105,15 +109,18 @@ class RuneCard(QFrame):
 
         header_layout.addWidget(img_container)
 
+        # Conteneur d'informations
         info_container = QWidget()
         info_layout = QVBoxLayout(info_container)
         info_layout.setContentsMargins(0, 0, 0, 0)
         info_layout.setSpacing(0)
         
+        # Slot et niveau
         slot_level = QLabel(f"{self.rune.slot_no} | +{self.rune.level}")
         slot_level.setStyleSheet("font-weight: bold; font-size: 14px;")
         info_layout.addWidget(slot_level)
         
+        # Qualité
         quality = QLabel(f"{self.rune.quality}")
         quality.setStyleSheet("color: #888888;")
         info_layout.addWidget(quality)
@@ -128,6 +135,8 @@ class RuneCard(QFrame):
         self.main_layout.addWidget(main_stat)
 
     def create_details_content(self):
+        """Création du contenu détaillé de la carte"""
+        # Affichage des substats
         if self.rune.substats:
             for substat in self.rune.substats:
                 stat_text = f"{substat.stat_type}: {substat.stat_value}"
@@ -140,6 +149,7 @@ class RuneCard(QFrame):
                     substat_label.setToolTip(f"Initial: {substat.initial_value}")
                 self.details_layout.addWidget(substat_label)
 
+        # Affichage du préfixe s'il existe
         if self.rune.prefix_eff_type:
             prefix_label = QLabel(self.rune.get_prefix_stat_display())
             prefix_label.setStyleSheet("color: #888888; font-style: italic;")
@@ -147,6 +157,7 @@ class RuneCard(QFrame):
 
     @pyqtSlot()
     def toggle_details(self):
+        """Bascule l'affichage des détails"""
         self.is_expanded = not self.is_expanded
         self.expand_button.setText("⌃" if self.is_expanded else "⌄")
         self.details_widget.setVisible(self.is_expanded)

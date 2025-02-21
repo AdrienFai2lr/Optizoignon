@@ -15,6 +15,8 @@ class RuneGrid(QScrollArea):
         self.setup_ui()
         
     def setup_ui(self):
+        """Configuration initiale de l'interface utilisateur"""
+        # Widget principal
         self.main_widget = QWidget()
         self.main_layout = QVBoxLayout(self.main_widget)
         
@@ -25,22 +27,7 @@ class RuneGrid(QScrollArea):
         self.grid_layout.setContentsMargins(12, 12, 12, 12)
         
         # Contrôles de pagination
-        self.pagination_widget = QWidget()
-        self.pagination_layout = QHBoxLayout(self.pagination_widget)
-        
-        self.prev_button = QPushButton("< Précédent")
-        self.prev_button.clicked.connect(self.previous_page)
-        
-        self.page_label = QLabel("Page 1")
-        
-        self.next_button = QPushButton("Suivant >")
-        self.next_button.clicked.connect(self.next_page)
-        
-        self.pagination_layout.addStretch()
-        self.pagination_layout.addWidget(self.prev_button)
-        self.pagination_layout.addWidget(self.page_label)
-        self.pagination_layout.addWidget(self.next_button)
-        self.pagination_layout.addStretch()
+        self.setup_pagination()
         
         # Assemblage final
         self.main_layout.addWidget(self.grid_container)
@@ -49,6 +36,33 @@ class RuneGrid(QScrollArea):
         self.setWidget(self.main_widget)
         self.setWidgetResizable(True)
         
+        self.apply_styles()
+        
+    def setup_pagination(self):
+        """Configuration des contrôles de pagination"""
+        self.pagination_widget = QWidget()
+        self.pagination_layout = QHBoxLayout(self.pagination_widget)
+        
+        # Bouton précédent
+        self.prev_button = QPushButton("< Précédent")
+        self.prev_button.clicked.connect(self.previous_page)
+        
+        # Label de page
+        self.page_label = QLabel("Page 1")
+        
+        # Bouton suivant
+        self.next_button = QPushButton("Suivant >")
+        self.next_button.clicked.connect(self.next_page)
+        
+        # Ajout des widgets au layout
+        self.pagination_layout.addStretch()
+        self.pagination_layout.addWidget(self.prev_button)
+        self.pagination_layout.addWidget(self.page_label)
+        self.pagination_layout.addWidget(self.next_button)
+        self.pagination_layout.addStretch()
+        
+    def apply_styles(self):
+        """Application des styles CSS"""
         self.setStyleSheet("""
             QScrollArea {
                 background-color: #1e1e1e;
@@ -77,17 +91,22 @@ class RuneGrid(QScrollArea):
         """)
         
     def update_runes(self, runes, current_page=1, total_pages=1):
+        """Mise à jour de l'affichage des runes"""
         self.current_page = current_page
         self.total_pages = total_pages
         
+        # Mise à jour du label de pagination
         self.page_label.setText(f"Page {current_page}/{total_pages}")
         
+        # Activation/désactivation des boutons de pagination
         self.prev_button.setEnabled(current_page > 1)
         self.next_button.setEnabled(current_page < total_pages)
         
         # Nettoyage de la grille existante
         for i in reversed(range(self.grid_layout.count())): 
-            self.grid_layout.itemAt(i).widget().setParent(None)
+            widget = self.grid_layout.itemAt(i).widget()
+            if widget:
+                widget.setParent(None)
         
         # Ajout des nouvelles runes
         cols = 5
@@ -98,11 +117,21 @@ class RuneGrid(QScrollArea):
             self.grid_layout.addWidget(card, row, col)
             
     def previous_page(self):
+        """Gestion du clic sur le bouton précédent"""
         if self.current_page > 1:
             self.current_page -= 1
             self.page_changed.emit(self.current_page)
             
     def next_page(self):
+        """Gestion du clic sur le bouton suivant"""
         if self.current_page < self.total_pages:
             self.current_page += 1
             self.page_changed.emit(self.current_page)
+            
+    def get_rune(self, index):
+        """Récupère une rune à partir de son index dans la grille"""
+        if 0 <= index < self.grid_layout.count():
+            item = self.grid_layout.itemAt(index)
+            if item and item.widget():
+                return item.widget().rune
+        return None
