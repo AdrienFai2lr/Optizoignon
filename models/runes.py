@@ -93,10 +93,10 @@ class Rune:
             16: "DEF",          # DEF_FLAT
             17: "DEF%",         # DEF_PCT
             18: "SPD",          # SPD
-            19: "Taux\nCritique",  # CRIT_RATE
-            20: "Dégâts\nCritiques", # CRIT_DMG
-            21: "Résistance",    # RES
-            22: "Précision"      # ACC
+            19: "TCC",  # CRIT_RATE
+            20: "DCC", # CRIT_DMG
+            21: "Res",    # RES
+            22: "Acc"      # ACC
         }
         return stat_types.get(stat_type_id, f"Unknown({stat_type_id})")
 

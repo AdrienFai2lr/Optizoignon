@@ -6,7 +6,7 @@ from PyQt6.QtGui import QPixmap
 
 from .gestionMonstres.monster_detail import MonsterDetailView
 from .gestionMonstres.monster_table import MonsterTable
-from .gestionRunes.runes_table import RuneTable
+from .gestionRunes.runes_table import RuneGrid
 from controllers.runes_controller import RuneController
 from controllers.monster_controller import MonsterController, DatabaseError
 from .gestionJson.dropJson import DropZoneWidget
@@ -96,8 +96,8 @@ class MainWindow(QMainWindow):
         layout.addLayout(toolbar)
         
         # Table des runes
-        self.rune_table = RuneTable()
-        self.rune_table.cellDoubleClicked.connect(self.show_rune_detail)
+        self.rune_table = RuneGrid()
+        
         layout.addWidget(self.rune_table)
         
         # Barre d'état
