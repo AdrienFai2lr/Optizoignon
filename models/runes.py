@@ -86,17 +86,17 @@ class Rune:
     def get_stat_type_name(stat_type_id):
         # This should be replaced with actual stat type names from the database
         stat_types = {
-            1: "HP flat",
-            2: "HP%",
-            3: "ATK flat",
-            4: "ATK%",
-            5: "DEF flat",
-            6: "DEF%",
-            7: "SPD",
-            8: "CRIT Rate",
-            9: "CRIT DMG",
-            10: "RES",
-            11: "ACC"
+            12: "HP",           # HP_FLAT
+            13: "HP%",          # HP_PCT
+            14: "ATK",          # ATK_FLAT
+            15: "ATK%",         # ATK_PCT
+            16: "DEF",          # DEF_FLAT
+            17: "DEF%",         # DEF_PCT
+            18: "SPD",          # SPD
+            19: "Taux\nCritique",  # CRIT_RATE
+            20: "Dégâts\nCritiques", # CRIT_DMG
+            21: "Résistance",    # RES
+            22: "Précision"      # ACC
         }
         return stat_types.get(stat_type_id, f"Unknown({stat_type_id})")
 

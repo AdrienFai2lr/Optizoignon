@@ -22,7 +22,7 @@ class RuneTable(QTableWidget):
         for i in range(self.columnCount()):
             if i == 0:  # Colonne Set
                 header.setSectionResizeMode(i, QHeaderView.ResizeMode.Fixed)
-                self.setColumnWidth(0, 150)
+                self.setColumnWidth(0, 100)
             elif i == 6:  # Colonne sous-stats
                 header.setSectionResizeMode(i, QHeaderView.ResizeMode.Stretch)
             else:
@@ -51,7 +51,7 @@ class RuneTable(QTableWidget):
                 if os.path.exists(image_path):
                     rune_label = QLabel()
                     pixmap = QPixmap(image_path)
-                    scaled_pixmap = pixmap.scaled(40, 40, Qt.AspectRatioMode.KeepAspectRatio)
+                    scaled_pixmap = pixmap.scaled(40,40, Qt.AspectRatioMode.KeepAspectRatio)
                     rune_label.setPixmap(scaled_pixmap)
                     rune_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
                     layout.addWidget(rune_label)
