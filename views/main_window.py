@@ -72,7 +72,7 @@ class MainWindow(QMainWindow):
         
         # Filtre set de runes
         self.filter_rune_set = QComboBox()
-        sets = ["Tous"] + [f"{name}" for id, name in self.rune_controller.rune_sets.items()]
+        sets = ["Tous"] + list(self.rune_controller.rune_sets.values())
         self.filter_rune_set.addItems(sets)
         self.filter_rune_set.currentTextChanged.connect(self.apply_rune_filters)
         filter_group.addWidget(QLabel("Set:"))
@@ -97,40 +97,52 @@ class MainWindow(QMainWindow):
         
         # Table des runes
         self.rune_table = RuneGrid()
-        
+        self.rune_table.page_changed.connect(self.on_rune_page_changed)
         layout.addWidget(self.rune_table)
         
         # Barre d'état
         self.statusBar().showMessage("Chargement des runes...")
 
-    def load_runes(self):
-        """Charge toutes les runes depuis la base de données"""
+    def on_rune_page_changed(self, page):
         try:
-            # Utilisez un ID de wizard fixe pour le moment
             wizard_id = 9215591  # À remplacer par l'ID réel de l'utilisateur
-            runes = self.rune_controller.get_runes(wizard_id)
-            self.rune_table.update_runes(runes)
-            self.statusBar().showMessage(f"{len(runes)} runes chargées")
-        except DatabaseError as err:
-            self.statusBar().showMessage(str(err))
-
-    def apply_rune_filters(self):
-        """Applique les filtres sur la liste des runes"""
-        try:
-            wizard_id = 1  # À remplacer par l'ID réel de l'utilisateur
             set_filter = self.filter_rune_set.currentText()
             slot_filter = self.filter_slot.currentText()
             
-            runes = self.rune_controller.get_runes(
+            runes, total_count = self.rune_controller.get_runes(
                 wizard_id=wizard_id,
                 set_filter=set_filter if set_filter != "Tous" else None,
-                slot_filter=slot_filter if slot_filter != "Tous" else None
+                slot_filter=slot_filter if slot_filter != "Tous" else None,
+                page=page
             )
             
-            self.rune_table.update_runes(runes)
-            self.statusBar().showMessage(f"{len(runes)} runes affichées")
-        except DatabaseError as err:
-            self.statusBar().showMessage(str(err))
+            total_pages = (total_count + 49) // 50  # 50 runes par page
+            self.rune_table.update_runes(runes, page, total_pages)
+            self.statusBar().showMessage(f"Page {page}/{total_pages} ({len(runes)} runes)")
+        except Exception as err:
+            self.statusBar().showMessage(f"Erreur lors du chargement de la page : {str(err)}")
+
+    def load_runes(self, page=1):
+        try:
+            wizard_id = 9215591  # À remplacer par l'ID réel de l'utilisateur
+            set_filter = self.filter_rune_set.currentText()
+            slot_filter = self.filter_slot.currentText()
+            
+            runes, total_count = self.rune_controller.get_runes(
+                wizard_id=wizard_id,
+                set_filter=set_filter if set_filter != "Tous" else None,
+                slot_filter=slot_filter if slot_filter != "Tous" else None,
+                page=page
+            )
+            
+            total_pages = (total_count + 49) // 50  # 50 runes par page
+            self.rune_table.update_runes(runes, page, total_pages)
+            self.statusBar().showMessage(f"Page {page}/{total_pages} ({len(runes)} runes)")
+        except Exception as err:
+            self.statusBar().showMessage(f"Erreur lors du chargement des runes : {str(err)}")
+
+    def apply_rune_filters(self):
+        self.load_runes(page=1)  # Retour à la première page lors du filtrage
 
     def show_rune_detail(self, row, column):
         """Affiche les détails d'une rune"""

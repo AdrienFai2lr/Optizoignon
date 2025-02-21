@@ -1,205 +1,138 @@
-from config.database import DatabaseConfig
 import mysql.connector
+from config.database import DatabaseConfig
 from models.runes import Rune, RuneSubstat
 
 class RuneController:
-    def __init__(self):  # Plus de paramètre cursor requis
-        self.db_config = DatabaseConfig.get_config()  # Stockage de la configuration
+    def __init__(self):
+        self.db_config = DatabaseConfig.get_config()
+        
+        # Dictionnaire des sets de runes
         self.rune_sets = {
-            1: "energy",
-            2: "guard",
-            3: "swift",
-            4: "blade",
-            5: "rage",
-            6: "focus",
-            7: "endure",
-            8: "fatal",
-            10: "despair",
-            11: "vampire",
-            13: "violent",
-            14: "nemesis",
-            15: "will",
-            16: "shield",
-            17: "revenge",
-            18: "destroy",
-            19: "fight",
-            20: "determination",
-            21: "enhance",
-            22: "accuracy",
-            23: "tolerance"
+            1: "Energy",
+            2: "Guard",
+            3: "Swift",
+            4: "Blade",
+            5: "Rage",
+            6: "Focus",
+            7: "Endure",
+            8: "Fatal",
+            10: "Despair",
+            11: "Vampire",
+            13: "Violent",
+            14: "Nemesis",
+            15: "Will",
+            16: "Shield",
+            17: "Revenge",
+            18: "Destroy",
+            19: "Fight",
+            20: "Determination",
+            21: "Enhance",
+            22: "Accuracy",
+            23: "Tolerance",
+            24: "Seal",
+            25: "Intangible"
         }
+        
+        self._base_query = """
+            SELECT 
+                r.*,
+                COUNT(*) OVER() as total_count
+            FROM runes r
+            WHERE r.wizard_id = %s
+                AND (r.occupied_type IS NULL OR r.occupied_id = 0)
+        """
+        
+        self._substat_query = """
+            SELECT 
+                rs.*, 
+                st.code as stat_code,
+                st.name as stat_name
+            FROM rune_substats rs
+            JOIN stat_types st ON rs.stat_type_id = st.id
+            WHERE rs.rune_id IN ({})
+            ORDER BY rs.rune_id, rs.upgrade_count DESC
+        """
 
     def _get_db_connection(self):
-        """Crée et retourne une nouvelle connexion à la base de données"""
-        return mysql.connector.connect(**self.db_config)
+        """Établit une connexion à la base de données en utilisant la configuration"""
+        try:
+            return mysql.connector.connect(**self.db_config)
+        except mysql.connector.Error as err:
+            raise Exception(f"Erreur de connexion à la base de données: {err}")
 
-    def _get_base_query(self):
-        """Retourne la requête SQL de base pour sélectionner les runes"""
-        return """
-            SELECT 
-                id, 
-                rune_id, 
-                wizard_id, 
-                slot_no, 
-                `rank`, 
-                `class`, 
-                set_id, 
-                upgrade_limit, 
-                upgrade_curr, 
-                base_value, 
-                sell_value, 
-                pri_eff_type, 
-                pri_eff_value, 
-                prefix_eff_type, 
-                prefix_eff_value, 
-                quality, 
-                COALESCE(locked, 0) as locked, 
-                level, 
-                original_grade, 
-                current_grade, 
-                original_quality
-            FROM runes
-            WHERE wizard_id = %s
-        """
-
-    def get_runes(self, wizard_id, set_filter=None, slot_filter=None, order_by=None):
-        """
-        Récupère les runes selon les filtres spécifiés
-        """
+    def get_runes(self, wizard_id, set_filter=None, slot_filter=None, order_by=None, page=1, per_page=50):
         conn = None
         cursor = None
         try:
             conn = self._get_db_connection()
             cursor = conn.cursor()
             
-            query = self._get_base_query()
+            query = self._base_query
             params = [wizard_id]
             
             if set_filter and set_filter != "Tous":
-                query += " AND set_id = %s"
-                set_id = next((k for k, v in self.rune_sets.items() if v.lower() == set_filter.lower()), None)
+                query += " AND r.set_id = %s"
+                set_id = next((k for k, v in self.rune_sets.items() 
+                             if v.lower() == set_filter.lower()), None)
                 params.append(set_id)
             
             if slot_filter and slot_filter != "Tous":
-                query += " AND slot_no = %s"
+                query += " AND r.slot_no = %s"
                 params.append(int(slot_filter))
             
-            # Gestion du tri
-            if order_by:
-                if order_by == "quality":
-                    query += " ORDER BY quality DESC"
-                elif order_by == "efficiency":
-                    query += " ORDER BY pri_eff_value DESC"
-                elif order_by == "set":
-                    query += " ORDER BY set_id ASC"
-                elif order_by == "slot":
-                    query += " ORDER BY slot_no ASC"
-            else:
-                query += " ORDER BY set_id ASC, slot_no ASC, quality DESC"
+            query += """
+                ORDER BY 
+                    CASE r.quality
+                        WHEN 'legendary' THEN 1
+                        WHEN 'heroic' THEN 2
+                        WHEN 'rare' THEN 3
+                        ELSE 4
+                    END,
+                    r.level DESC,
+                    r.slot_no ASC
+            """
+            
+            offset = (page - 1) * per_page
+            query += " LIMIT %s OFFSET %s"
+            params.extend([per_page, offset])
             
             cursor.execute(query, params)
             runes_data = cursor.fetchall()
             
-            runes = [Rune(data) for data in runes_data]
+            total_count = runes_data[0][-1] if runes_data else 0
             
-            # Récupération des substats pour chaque rune
-            for rune in runes:
-                substats = self.get_rune_substats(cursor, rune.id)
-                rune.set_substats(substats)
+            rune_ids = [data[0] for data in runes_data]
+            substats = {}
+            if rune_ids:
+                substats = self.get_bulk_substats(cursor, rune_ids)
             
-            return runes
+            runes = []
+            for data in runes_data:
+                rune = Rune(data[:-1])  # Exclure le total_count
+                rune.set_substats(substats.get(rune.id, []))
+                runes.append(rune)
             
-        except mysql.connector.Error as err:
-            print(f"Erreur SQL détaillée: {err}")
-            raise DatabaseError(f"Erreur de base de données: {err}")
+            return runes, total_count
+            
+        finally:
+            if cursor:
+                cursor.close()
+            if conn and conn.is_connected():
+                conn.close()
+
+    def get_bulk_substats(self, cursor, rune_ids):
+        if not rune_ids:
+            return {}
+            
+        query = self._substat_query.format(','.join(['%s'] * len(rune_ids)))
+        cursor.execute(query, rune_ids)
+        all_substats = cursor.fetchall()
         
-        finally:
-            if cursor:
-                cursor.close()
-            if conn and conn.is_connected():
-                conn.close()
-
-    def get_rune_substats(self, cursor, rune_id):
-        """Récupère les sous-statistiques d'une rune"""
-        substat_query = """
-            SELECT id, rune_id, stat_type_id, stat_value, upgrade_count, initial_value
-            FROM rune_substats
-            WHERE rune_id = %s
-            ORDER BY id ASC
-        """
-        cursor.execute(substat_query, (rune_id,))
-        substats_data = cursor.fetchall()
-        return [RuneSubstat(data) for data in substats_data]
-
-    def get_rune_by_id(self, rune_id, wizard_id):
-        """Récupère une rune spécifique par son ID"""
-        conn = None
-        cursor = None
-        try:
-            conn = self._get_db_connection()
-            cursor = conn.cursor()
-            
-            query = self._get_base_query() + " AND rune_id = %s"
-            cursor.execute(query, (wizard_id, rune_id))
-            
-            rune_data = cursor.fetchone()
-            if not rune_data:
-                return None
-                
-            rune = Rune(rune_data)
-            substats = self.get_rune_substats(cursor, rune.id)
-            rune.set_substats(substats)
-            
-            return rune
-            
-        except mysql.connector.Error as err:
-            raise DatabaseError(f"Erreur de base de données: {err}")
-            
-        finally:
-            if cursor:
-                cursor.close()
-            if conn and conn.is_connected():
-                conn.close()
-
-    def get_set_name(self, set_id):
-        """Retourne le nom du set de runes"""
-        return self.rune_sets.get(set_id, "unknown")
-
-    def get_set_id(self, set_name):
-        """Retourne l'ID du set à partir de son nom"""
-        set_name = set_name.lower()
-        for set_id, name in self.rune_sets.items():
-            if name.lower() == set_name:
-                return set_id
-        return None
-
-    def update_rune_lock(self, rune_id, wizard_id, locked):
-        """Met à jour le statut de verrouillage d'une rune"""
-        conn = None
-        cursor = None
-        try:
-            conn = self._get_db_connection()
-            cursor = conn.cursor()
-            
-            query = """
-                UPDATE runes 
-                SET locked = %s 
-                WHERE rune_id = %s AND wizard_id = %s
-            """
-            cursor.execute(query, (locked, rune_id, wizard_id))
-            conn.commit()
-            
-            return cursor.rowcount > 0
-            
-        except mysql.connector.Error as err:
-            raise DatabaseError(f"Erreur de base de données: {err}")
-            
-        finally:
-            if cursor:
-                cursor.close()
-            if conn and conn.is_connected():
-                conn.close()
-
-class DatabaseError(Exception):
-    """Exception personnalisée pour les erreurs de base de données"""
-    pass
+        substats_by_rune = {}
+        for substat_data in all_substats:
+            rune_id = substat_data[1]
+            if rune_id not in substats_by_rune:
+                substats_by_rune[rune_id] = []
+            substats_by_rune[rune_id].append(RuneSubstat(substat_data))
+        
+        return substats_by_rune
