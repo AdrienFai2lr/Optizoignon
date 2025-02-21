@@ -16,7 +16,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.monster_controller = MonsterController()
-        self.rune_controller = RuneController()  # Ajout du contrôleur de runes
+        self.rune_controller = RuneController()
         self.setWindowTitle("OPTIZ-oignoin - Gestion de monstres")
         self.setMinimumSize(1200, 800)
         self.init_ui()
@@ -105,12 +105,10 @@ class MainWindow(QMainWindow):
 
     def on_rune_page_changed(self, page):
         try:
-            wizard_id = 9215591  # À remplacer par l'ID réel de l'utilisateur
             set_filter = self.filter_rune_set.currentText()
             slot_filter = self.filter_slot.currentText()
             
             runes, total_count = self.rune_controller.get_runes(
-                wizard_id=wizard_id,
                 set_filter=set_filter if set_filter != "Tous" else None,
                 slot_filter=slot_filter if slot_filter != "Tous" else None,
                 page=page
@@ -124,12 +122,10 @@ class MainWindow(QMainWindow):
 
     def load_runes(self, page=1):
         try:
-            wizard_id = 9215591  # À remplacer par l'ID réel de l'utilisateur
             set_filter = self.filter_rune_set.currentText()
             slot_filter = self.filter_slot.currentText()
             
             runes, total_count = self.rune_controller.get_runes(
-                wizard_id=wizard_id,
                 set_filter=set_filter if set_filter != "Tous" else None,
                 slot_filter=slot_filter if slot_filter != "Tous" else None,
                 page=page
@@ -203,11 +199,11 @@ class MainWindow(QMainWindow):
         buttons_layout = QVBoxLayout(buttons_container)
         button_style = """
         QPushButton {
-        font-size: 18px;
-        padding: 10px 20px;
-        min-width: 200px;
-        color: white;
-        background-color: #333333;
+            font-size: 18px;
+            padding: 10px 20px;
+            min-width: 200px;
+            color: white;
+            background-color: #333333;
         }
         """
         buttons = [

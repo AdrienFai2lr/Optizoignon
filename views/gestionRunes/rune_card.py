@@ -80,7 +80,7 @@ class RuneCard(QFrame):
         img_container = QLabel()
         layout = QHBoxLayout(img_container)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(2)
+        layout.setSpacing(0)
 
         # Image du set
         if hasattr(self.rune, 'set_id'):
@@ -89,7 +89,7 @@ class RuneCard(QFrame):
             if os.path.exists(image_path):
                 rune_label = QLabel()
                 pixmap = QPixmap(image_path)
-                scaled_pixmap = pixmap.scaled(40, 40, Qt.AspectRatioMode.KeepAspectRatio)
+                scaled_pixmap = pixmap.scaled(50, 50, Qt.AspectRatioMode.KeepAspectRatio)
                 rune_label.setPixmap(scaled_pixmap)
                 layout.addWidget(rune_label)
 

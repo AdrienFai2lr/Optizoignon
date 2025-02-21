@@ -38,8 +38,7 @@ class RuneController:
                 r.*,
                 COUNT(*) OVER() as total_count
             FROM runes r
-            WHERE r.wizard_id = %s
-                AND (r.occupied_type IS NULL OR r.occupied_id = 0)
+            WHERE 1=1
         """
         
         self._substat_query = """
@@ -60,20 +59,40 @@ class RuneController:
         except mysql.connector.Error as err:
             raise Exception(f"Erreur de connexion à la base de données: {err}")
 
-    def get_runes(self, wizard_id, set_filter=None, slot_filter=None, order_by=None, page=1, per_page=50):
+    def get_runes(self, set_filter=None, slot_filter=None, order_by=None, page=1, per_page=50):
         conn = None
         cursor = None
         try:
             conn = self._get_db_connection()
             cursor = conn.cursor()
             
+            # Première requête pour obtenir le nombre total de runes
+            count_query = """
+                SELECT COUNT(*) 
+                FROM runes r
+                WHERE 1=1
+            """
+            count_params = []
+            
+            if set_filter and set_filter != "Tous":
+                count_query += " AND r.set_id = %s"
+                set_id = next((k for k, v in self.rune_sets.items() 
+                             if v.lower() == set_filter.lower()), None)
+                count_params.append(set_id)
+            
+            if slot_filter and slot_filter != "Tous":
+                count_query += " AND r.slot_no = %s"
+                count_params.append(int(slot_filter))
+            
+            cursor.execute(count_query, count_params)
+            total_count = cursor.fetchone()[0]
+            
+            # Requête principale pour les runes de la page courante
             query = self._base_query
-            params = [wizard_id]
+            params = []
             
             if set_filter and set_filter != "Tous":
                 query += " AND r.set_id = %s"
-                set_id = next((k for k, v in self.rune_sets.items() 
-                             if v.lower() == set_filter.lower()), None)
                 params.append(set_id)
             
             if slot_filter and slot_filter != "Tous":
@@ -98,8 +117,6 @@ class RuneController:
             
             cursor.execute(query, params)
             runes_data = cursor.fetchall()
-            
-            total_count = runes_data[0][-1] if runes_data else 0
             
             rune_ids = [data[0] for data in runes_data]
             substats = {}
