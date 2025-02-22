@@ -18,7 +18,7 @@ class MainWindow(QMainWindow):
         self.monster_controller = MonsterController()
         self.rune_controller = RuneController()
         self.setWindowTitle("OPTIZ-oignoin - Gestion de monstres")
-        self.setMinimumSize(1200, 800)
+        self.setMinimumSize(1920, 1080)
         self.init_ui()
         self.load_monsters()
     
@@ -146,9 +146,6 @@ class MainWindow(QMainWindow):
         if rune:
             # Pour l'instant, on affiche juste un message dans la barre d'état
             self.statusBar().showMessage(f"Détails de la rune {rune.id} (à implémenter)")
-            # Plus tard, vous pourrez créer une vue détaillée comme pour les monstres
-            # self.rune_detail_view.update_rune(rune)
-            # self.stacked_widget.setCurrentWidget(self.rune_detail_view)
 
     def handle_json_import(self, data):
         """Gère l'importation des données JSON"""

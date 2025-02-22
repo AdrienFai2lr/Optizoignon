@@ -23,8 +23,8 @@ class RuneGrid(QScrollArea):
         # Container pour la grille de runes
         self.grid_container = QWidget()
         self.grid_layout = QGridLayout(self.grid_container)
-        self.grid_layout.setSpacing(12)
-        self.grid_layout.setContentsMargins(12, 12, 12, 12)
+        self.grid_layout.setSpacing(5)
+        self.grid_layout.setContentsMargins(5, 5, 5, 5)
         
         # Contrôles de pagination
         self.setup_pagination()

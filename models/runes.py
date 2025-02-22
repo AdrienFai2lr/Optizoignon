@@ -72,6 +72,7 @@ class Rune:
         ]
 
     def set_substats(self, substats):
+        """Définit les sous-statistiques de la rune"""
         self.substats = substats
 
     @property
@@ -81,19 +82,24 @@ class Rune:
 
     def get_main_stat_display(self):
         """Retourne l'affichage de la statistique principale"""
-        stat_name = self.pri_stat_name or self.get_stat_type_name(self.pri_eff_type)
-        return f"{stat_name}: {self.pri_eff_value}"
+        if self.pri_stat_name:
+            return f"{self.pri_stat_name}: {self.pri_eff_value}"
+        return f"{self.get_stat_type_name(self.pri_eff_type)}: {self.pri_eff_value}"
 
     def get_prefix_stat_display(self):
         """Retourne l'affichage de la statistique préfixe"""
         if self.prefix_eff_type and self.prefix_eff_value:
-            stat_name = self.prefix_stat_name or self.get_stat_type_name(self.prefix_eff_type)
-            return f"{stat_name}: {self.prefix_eff_value}"
+            if self.prefix_stat_name:
+                return f"{self.prefix_stat_name}: {self.prefix_eff_value}"
+            return f"{self.get_stat_type_name(self.prefix_eff_type)}: {self.prefix_eff_value}"
         return ""
 
     def get_substats_display(self):
         """Retourne l'affichage des sous-statistiques"""
-        return "\n".join([f"{sub.stat_type}: {sub.stat_value}" for sub in self.substats])
+        return "\n".join([
+            f"{sub.stat_type}: {sub.stat_value}{' +' + str(sub.upgrade_count) if sub.upgrade_count > 0 else ''}"
+            for sub in self.substats
+        ])
 
     @staticmethod
     def get_stat_type_name(stat_type_id):
@@ -124,8 +130,31 @@ class RuneSubstat:
         self.initial_value = data[5]
         self.stat_code = data[7] if len(data) > 7 else None
         self.stat_name = data[8] if len(data) > 8 else None
+        self.stat_description = data[9] if len(data) > 9 else None
 
     @property
     def stat_type(self):
-        """Retourne le type de statistique"""
-        return self.stat_name or Rune.get_stat_type_name(self.stat_type_id)
+        """Retourne le nom de la statistique"""
+        if self.stat_name:
+            return self.stat_name
+        return self.stat_code or Rune.get_stat_type_name(self.stat_type_id)
+
+    @property
+    def display_value(self):
+        """Retourne la valeur formatée avec le nombre d'améliorations"""
+        value = str(self.stat_value)
+        if self.upgrade_count > 0:
+            value += f" +{self.upgrade_count}"
+        return value
+
+    @property
+    def tooltip(self):
+        """Retourne le texte d'info-bulle avec la description complète"""
+        parts = []
+        if self.stat_description:
+            parts.append(self.stat_description)
+        if self.initial_value is not None:
+            parts.append(f"Valeur initiale: {self.initial_value}")
+        if self.upgrade_count:
+            parts.append(f"Nombre d'améliorations: {self.upgrade_count}")
+        return "\n".join(parts)

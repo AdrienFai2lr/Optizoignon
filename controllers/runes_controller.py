@@ -44,13 +44,15 @@ class RuneController:
             FROM runes r
             LEFT JOIN stat_types st_pri ON r.pri_eff_type = st_pri.id
             LEFT JOIN stat_types st_pre ON r.prefix_eff_type = st_pre.id
+            WHERE 1=1
         """
         
         self._substat_query = """
             SELECT 
                 rs.*, 
                 st.code as stat_code,
-                st.name as stat_name
+                st.name as stat_name,
+                st.description as stat_description
             FROM rune_substats rs
             JOIN stat_types st ON rs.stat_type_id = st.id
             WHERE rs.rune_id IN ({})
@@ -58,18 +60,26 @@ class RuneController:
         """
 
     def _load_stat_types(self):
-        """Charge les types de statistiques depuis la base de données"""
+        """Charge tous les types de statistiques depuis la base de données"""
         conn = None
         cursor = None
         try:
             conn = self._get_db_connection()
             cursor = conn.cursor()
             
-            query = "SELECT id, code, name FROM stat_types"
+            query = """
+                SELECT id, code, name, description 
+                FROM stat_types 
+                ORDER BY id
+            """
             cursor.execute(query)
             
-            for stat_id, code, name in cursor.fetchall():
-                self.stat_types[stat_id] = {'code': code, 'name': name}
+            for stat_id, code, name, description in cursor.fetchall():
+                self.stat_types[stat_id] = {
+                    'code': code,
+                    'name': name,
+                    'description': description
+                }
                 
         finally:
             if cursor:
@@ -78,7 +88,7 @@ class RuneController:
                 conn.close()
 
     def _get_db_connection(self):
-        """Établit une connexion à la base de données en utilisant la configuration"""
+        """Établit une connexion à la base de données"""
         try:
             return mysql.connector.connect(**self.db_config)
         except mysql.connector.Error as err:
@@ -91,45 +101,29 @@ class RuneController:
         return f"Unknown({stat_type_id})"
 
     def get_runes(self, set_filter=None, slot_filter=None, order_by=None, page=1, per_page=50):
+        """Récupère les runes avec filtres et pagination"""
         conn = None
         cursor = None
         try:
             conn = self._get_db_connection()
             cursor = conn.cursor()
             
-            # Première requête pour obtenir le nombre total de runes
-            count_query = """
-                SELECT COUNT(*) 
-                FROM runes r
-                WHERE 1=1
-            """
-            count_params = []
-            
-            if set_filter and set_filter != "Tous":
-                count_query += " AND r.set_id = %s"
-                set_id = next((k for k, v in self.rune_sets.items() 
-                             if v.lower() == set_filter.lower()), None)
-                count_params.append(set_id)
-            
-            if slot_filter and slot_filter != "Tous":
-                count_query += " AND r.slot_no = %s"
-                count_params.append(int(slot_filter))
-            
-            cursor.execute(count_query, count_params)
-            total_count = cursor.fetchone()[0]
-            
-            # Requête principale pour les runes de la page courante
-            query = self._base_query + " WHERE 1=1"
+            # Construction de la requête avec les filtres
+            query = self._base_query
             params = []
             
             if set_filter and set_filter != "Tous":
-                query += " AND r.set_id = %s"
-                params.append(set_id)
+                set_id = next((k for k, v in self.rune_sets.items() 
+                             if v.lower() == set_filter.lower()), None)
+                if set_id:
+                    query += " AND r.set_id = %s"
+                    params.append(set_id)
             
             if slot_filter and slot_filter != "Tous":
                 query += " AND r.slot_no = %s"
                 params.append(int(slot_filter))
             
+            # Tri par défaut
             query += """
                 ORDER BY 
                     CASE r.quality
@@ -142,23 +136,42 @@ class RuneController:
                     r.slot_no ASC
             """
             
+            # Pagination
             offset = (page - 1) * per_page
             query += " LIMIT %s OFFSET %s"
             params.extend([per_page, offset])
             
+            # Exécution de la requête
             cursor.execute(query, params)
             runes_data = cursor.fetchall()
             
+            # Récupération des sous-stats
             rune_ids = [data[0] for data in runes_data]
             substats = {}
             if rune_ids:
                 substats = self.get_bulk_substats(cursor, rune_ids)
             
+            # Création des objets Rune
             runes = []
             for data in runes_data:
                 rune = Rune(data[:-1])  # Exclure le total_count
                 rune.set_substats(substats.get(rune.id, []))
                 runes.append(rune)
+            
+            # Calcul du nombre total de runes pour la pagination
+            count_query = "SELECT COUNT(*) FROM runes WHERE 1=1"
+            count_params = []
+            
+            if set_filter and set_filter != "Tous":
+                count_query += " AND set_id = %s"
+                count_params.append(set_id)
+            
+            if slot_filter and slot_filter != "Tous":
+                count_query += " AND slot_no = %s"
+                count_params.append(int(slot_filter))
+            
+            cursor.execute(count_query, count_params)
+            total_count = cursor.fetchone()[0]
             
             return runes, total_count
             
@@ -169,6 +182,7 @@ class RuneController:
                 conn.close()
 
     def get_bulk_substats(self, cursor, rune_ids):
+        """Récupère les sous-stats pour plusieurs runes"""
         if not rune_ids:
             return {}
             
