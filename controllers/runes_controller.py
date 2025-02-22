@@ -159,7 +159,7 @@ class RuneController:
                 runes.append(rune)
             
             # Calcul du nombre total de runes pour la pagination
-            count_query = "SELECT COUNT(*) FROM runes WHERE 1=1"
+            count_query = "SELECT COUNT(*) FROM runes"
             count_params = []
             
             if set_filter and set_filter != "Tous":

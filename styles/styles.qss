@@ -1,0 +1,123 @@
+/* styles.qss */
+
+/* Style général pour QScrollArea */
+QScrollArea {
+    background-color: #1a1a1a;
+    border: none;
+}
+
+/* Style de base pour les widgets */
+QWidget {
+    background-color: #1a1a1a;
+}
+
+/* Styles des boutons de pagination */
+QPushButton {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border: 2px solid #3d3d3d;
+    border-radius: 20px;
+    font-size: 16px;
+    font-weight: bold;
+    padding: 8px;
+}
+
+QPushButton:hover {
+    background-color: #3d3d3d;
+    border-color: #4d4d4d;
+}
+
+QPushButton:pressed {
+    background-color: #4d4d4d;
+}
+
+QPushButton:disabled {
+    background-color: #1d1d1d;
+    color: #4d4d4d;
+    border-color: #2d2d2d;
+}
+
+/* Style de base pour les labels */
+QLabel {
+    color: #ffffff;
+    font-size: 14px;
+}
+
+/* Styles spécifiques pour RuneCard */
+RuneCard {
+    background-color: #2d2d2d;
+    border-radius: 20px;
+    padding: 15px;
+}
+
+/* Conteneur d'image */
+RuneCard QFrame#imageContainer {
+    background-color: #252525;
+    border-radius: 15px;
+    padding: 8px;
+}
+
+/* Stats principales */
+QLabel.main-stat {
+    font-size: 24px;
+    font-weight: bold;
+    color: #5da6ff;
+    padding: 10px 0;
+}
+
+/* Sous-stats */
+QLabel.substat {
+    color: #e0e0e0;
+    font-size: 13px;
+    padding: 5px 0;
+    margin: 2px 0;
+}
+
+/* Préfixe */
+QLabel.prefix {
+    color: #a0a0a0;
+    font-style: italic;
+    font-size: 12px;
+    padding: 3px 0;
+}
+
+/* Qualité de rune */
+QLabel.rune-quality {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+/* Conteneurs de stats */
+QFrame.stats-container {
+    background-color: #252525;
+    border-radius: 12px;
+    padding: 8px;
+}
+
+/* Slot et niveau */
+QLabel.slot-level {
+    font-weight: bold;
+    font-size: 16px;
+    color: #ffffff;
+}
+
+/* Couleurs des qualités de runes */
+QLabel.quality-normal {
+    color: #e0e0e0;
+}
+
+QLabel.quality-magic {
+    color: #00e5ff;
+}
+
+QLabel.quality-rare {
+    color: #ffd700;
+}
+
+QLabel.quality-heroic {
+    color: #e040fb;
+}
+
+QLabel.quality-legendary {
+    color: #ffa000;
+}

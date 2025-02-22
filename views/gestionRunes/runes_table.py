@@ -1,3 +1,4 @@
+# runes_table.py
 from PyQt6.QtWidgets import (QWidget, QGridLayout, QLabel, QFrame, QVBoxLayout, 
                             QScrollArea, QSizePolicy, QPushButton, QHBoxLayout)
 from PyQt6.QtGui import QPixmap
@@ -12,84 +13,63 @@ class RuneGrid(QScrollArea):
         self.rune_images_dir = "images/runes/"
         self.current_page = 1
         self.total_pages = 1
+        self.load_stylesheet()
         self.setup_ui()
         
+    def load_stylesheet(self):
+        """Charge le fichier de style QSS"""
+        try:
+            with open('styles/styles.qss', 'r') as f:
+                self.setStyleSheet(f.read())
+        except Exception as e:
+            print(f"Erreur lors du chargement du style: {e}")
+    
     def setup_ui(self):
         """Configuration initiale de l'interface utilisateur"""
-        # Widget principal
         self.main_widget = QWidget()
         self.main_layout = QVBoxLayout(self.main_widget)
+        self.main_layout.setSpacing(20)
+        self.main_layout.setContentsMargins(20, 20, 20, 20)
         
         # Container pour la grille de runes
         self.grid_container = QWidget()
         self.grid_layout = QGridLayout(self.grid_container)
-        self.grid_layout.setSpacing(5)
-        self.grid_layout.setContentsMargins(5, 5, 5, 5)
+        self.grid_layout.setSpacing(20)
+        self.grid_layout.setContentsMargins(10, 10, 10, 10)
         
-        # Contrôles de pagination
         self.setup_pagination()
         
-        # Assemblage final
         self.main_layout.addWidget(self.grid_container)
         self.main_layout.addWidget(self.pagination_widget)
         
         self.setWidget(self.main_widget)
         self.setWidgetResizable(True)
         
-        self.apply_styles()
-        
     def setup_pagination(self):
         """Configuration des contrôles de pagination"""
         self.pagination_widget = QWidget()
         self.pagination_layout = QHBoxLayout(self.pagination_widget)
         
-        # Bouton précédent
-        self.prev_button = QPushButton("< Précédent")
-        self.prev_button.clicked.connect(self.previous_page)
+        self.prev_button = QPushButton("←")
+        self.prev_button.setFixedSize(40, 40)
+        self.prev_button.clicked.connect(self.goto_previous_page)  # Changé ici
         
-        # Label de page
         self.page_label = QLabel("Page 1")
+        self.page_label.setFixedWidth(100)
+        self.page_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
-        # Bouton suivant
-        self.next_button = QPushButton("Suivant >")
-        self.next_button.clicked.connect(self.next_page)
+        self.next_button = QPushButton("→")
+        self.next_button.setFixedSize(40, 40)
+        self.next_button.clicked.connect(self.goto_next_page)  # Changé ici
         
-        # Ajout des widgets au layout
         self.pagination_layout.addStretch()
         self.pagination_layout.addWidget(self.prev_button)
         self.pagination_layout.addWidget(self.page_label)
         self.pagination_layout.addWidget(self.next_button)
         self.pagination_layout.addStretch()
         
-    def apply_styles(self):
-        """Application des styles CSS"""
-        self.setStyleSheet("""
-            QScrollArea {
-                background-color: #1e1e1e;
-                border: none;
-            }
-            QWidget {
-                background-color: #1e1e1e;
-            }
-            QPushButton {
-                background-color: #333333;
-                color: white;
-                border: none;
-                padding: 5px 10px;
-                border-radius: 3px;
-            }
-            QPushButton:hover {
-                background-color: #444444;
-            }
-            QPushButton:disabled {
-                background-color: #222222;
-                color: #666666;
-            }
-            QLabel {
-                color: white;
-            }
-        """)
-        
+        self.pagination_widget.setLayout(self.pagination_layout)
+
     def update_runes(self, runes, current_page=1, total_pages=1):
         """Mise à jour de l'affichage des runes"""
         self.current_page = current_page
@@ -115,14 +95,14 @@ class RuneGrid(QScrollArea):
             col = i % cols
             card = RuneCard(rune, self.rune_images_dir)
             self.grid_layout.addWidget(card, row, col)
-            
-    def previous_page(self):
+
+    def goto_previous_page(self):  # Nouvelle méthode
         """Gestion du clic sur le bouton précédent"""
         if self.current_page > 1:
             self.current_page -= 1
             self.page_changed.emit(self.current_page)
             
-    def next_page(self):
+    def goto_next_page(self):  # Nouvelle méthode
         """Gestion du clic sur le bouton suivant"""
         if self.current_page < self.total_pages:
             self.current_page += 1
