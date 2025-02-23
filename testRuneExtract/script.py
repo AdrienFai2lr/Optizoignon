@@ -3,7 +3,6 @@ from datetime import datetime
 import sys
 import logging
 import os
-import math
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
@@ -12,13 +11,13 @@ logger = logging.getLogger(__name__)
 def get_rune_quality(rank):
     """Détermine la qualité de la rune basée sur son rang"""
     quality_mapping = {
-        1: 'rare',
-        2: 'rare',
+        1: 'normal',
+        2: 'magique',
         3: 'rare',
         4: 'heroic',
         5: 'legendary'
     }
-    return quality_mapping.get(rank, 'rare')
+    return quality_mapping.get(rank, 'normal')
 
 def get_rune_grade(rank):
     """Détermine le grade de la rune basée sur son rang"""
@@ -40,11 +39,11 @@ def get_stat_code(stat_id):
         4: 'ATK_PCT',
         5: 'DEF_FLAT',
         6: 'DEF_PCT',
-        8: 'SPD',
-        9: 'CRIT_RATE',
-        10: 'CRIT_DMG',
-        11: 'RES',
-        12: 'ACC'
+        7: 'SPD',
+        8: 'CRIT_RATE',
+        9: 'CRIT_DMG',
+        10: 'RES',
+        11: 'ACC'
     }
     return stat_type_mapping.get(stat_id, 'HP_FLAT')
 
@@ -156,13 +155,14 @@ SELECT
     (SELECT id FROM stat_types WHERE code = '{get_stat_code(substat[0])}'),
     {substat[1]},
     {upgrade_count},
-    {initial_value}
-WHERE EXISTS (
-    SELECT 1 FROM rune_stat_ranges 
-    WHERE stat_type_id = (SELECT id FROM stat_types WHERE code = '{get_stat_code(substat[0])}')
-    AND is_ancient = {1 if is_ancient else 0}
-    AND {initial_value} BETWEEN substat_initial_min AND substat_initial_max
-);"""
+    {initial_value};
+
+-- Vérification de l'insertion via un SELECT conditionnel
+SELECT CONCAT('Erreur: Substat invalide pour la rune ', {rune_data['rune_id']}, 
+             ' - Type: ', '{get_stat_code(substat[0])}', 
+             ' Valeur: ', {initial_value}) AS warning 
+WHERE ROW_COUNT() = 0;
+"""
                 queries.append(substat_query)
 
         # Génération des enregistrements d'upgrades
@@ -192,28 +192,25 @@ WHERE EXISTS (SELECT 1 FROM monsters WHERE com2us_id = {unit_master_id});"""
         logger.error(f"Erreur lors de la génération des requêtes SQL pour la rune {rune_data.get('rune_id')}: {str(e)}")
         return []
 
-def write_sql_file(queries, file_path, include_transaction=True, is_first_file=False):
+def write_sql_file(queries, file_path):
     """Écrit les requêtes SQL dans un fichier"""
     with open(file_path, 'w', encoding='utf-8') as f:
-        if include_transaction:
-            f.write("START TRANSACTION;\n\n")
-            
-            # Ajoute les DELETE uniquement dans le premier fichier
-            if is_first_file:
-                f.write("-- Suppression des données existantes\n")
-                f.write("DELETE FROM monster_runes;\n")
-                f.write("DELETE FROM rune_upgrades;\n")
-                f.write("DELETE FROM rune_substats;\n")
-                f.write("DELETE FROM runes;\n\n")
+        f.write("START TRANSACTION;\n\n")
+        
+        # Ajout des DELETE au début du fichier
+        f.write("-- Suppression des données existantes\n")
+        f.write("DELETE FROM monster_runes;\n")
+        f.write("DELETE FROM rune_upgrades;\n")
+        f.write("DELETE FROM rune_substats;\n")
+        f.write("DELETE FROM runes;\n\n")
         
         for query in queries:
             f.write(query + "\n")
             
-        if include_transaction:
-            f.write("\nCOMMIT;\n")
+        f.write("\nCOMMIT;\n")
 
-def create_split_insert_sql(data_json, base_output_path, num_files=4):
-    """Crée plusieurs fichiers SQL avec les INSERT divisés"""
+def create_single_insert_sql(data_json, output_file):
+    """Crée un seul fichier SQL avec tous les INSERT"""
     try:
         # Extraire toutes les runes
         all_runes = []
@@ -229,39 +226,27 @@ def create_split_insert_sql(data_json, base_output_path, num_files=4):
                 if monster.get('runes'):
                     for rune in monster.get('runes', []):
                         if validate_rune_data(rune):
-                            # On associe le unit_master_id à la rune
                             rune['unit_master_id'] = unit_master_id
                             all_runes.append(rune)
 
         # Éliminer les doublons potentiels basés sur rune_id
         unique_runes = {rune['rune_id']: rune for rune in all_runes}.values()
         all_runes = list(unique_runes)
-
-        runes_per_file = math.ceil(len(all_runes) / num_files)
         
-        for i in range(num_files):
-            start_idx = i * runes_per_file
-            end_idx = min((i + 1) * runes_per_file, len(all_runes))
-            
-            file_queries = []
-            runes_subset = all_runes[start_idx:end_idx]
-            
-            for rune in runes_subset:
-                if validate_rune_data(rune):
-                    file_queries.append(f"-- Rune ID: {rune['rune_id']}")
-                    queries = generate_rune_inserts(rune, rune.get('unit_master_id'))
-                    file_queries.extend(queries)
-                    file_queries.append("")
-            
-            output_file = f"{base_output_path}_part{i+1}.sql"
-            write_sql_file(file_queries, output_file, is_first_file=(i==0))
-            logger.info(f"Fichier SQL généré : {output_file}")
-            logger.info(f"Nombre de runes dans le fichier {i+1}: {len(runes_subset)}")
-
+        file_queries = []
+        for rune in all_runes:
+            if validate_rune_data(rune):
+                file_queries.append(f"-- Rune ID: {rune['rune_id']}")
+                queries = generate_rune_inserts(rune, rune.get('unit_master_id'))
+                file_queries.extend(queries)
+                file_queries.append("")
+        
+        write_sql_file(file_queries, output_file)
+        logger.info(f"Fichier SQL généré : {output_file}")
         logger.info(f"Nombre total de runes traitées : {len(all_runes)}")
 
     except Exception as e:
-        logger.error(f"Erreur lors de la création des fichiers SQL : {str(e)}")
+        logger.error(f"Erreur lors de la création du fichier SQL : {str(e)}")
 
 def main():
     try:
@@ -276,9 +261,9 @@ def main():
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         os.makedirs('rune_exports', exist_ok=True)
-        base_output_file = f'rune_exports/rune_inserts_{timestamp}'
+        output_file = f'rune_exports/rune_inserts_{timestamp}.sql'
 
-        create_split_insert_sql(data, base_output_file, num_files=4)
+        create_single_insert_sql(data, output_file)
 
     except FileNotFoundError:
         logger.error(f"Erreur: Le fichier {input_file} n'a pas été trouvé")

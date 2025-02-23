@@ -43,7 +43,7 @@ class RuneCard(QFrame):
         if os.path.exists(image_path):
             rune_image = QLabel()
             pixmap = QPixmap(image_path)
-            scaled_pixmap = pixmap.scaled(48, 48,
+            scaled_pixmap = pixmap.scaled(50, 50,
                                         Qt.AspectRatioMode.KeepAspectRatio,
                                         Qt.TransformationMode.SmoothTransformation)
             rune_image.setPixmap(scaled_pixmap)

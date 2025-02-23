@@ -53,16 +53,16 @@ RuneCard {
 /* Conteneur d'image */
 RuneCard QFrame#imageContainer {
     background-color: #252525;
-    border-radius: 15px;
+    border-radius: 5px;
     padding: 8px;
 }
 
 /* Stats principales */
 QLabel.main-stat {
-    font-size: 24px;
+    font-size: 20px;
     font-weight: bold;
     color: #5da6ff;
-    padding: 10px 0;
+    padding: 5px;
 }
 
 /* Sous-stats */
