@@ -1,160 +1,116 @@
 class Rune:
     def __init__(self, data):
+        # Champs d'identification
         self.id = data[0]
         self.rune_id = data[1]
         self.wizard_id = data[2]
-        self.occupied_type = data[3]
-        self.occupied_id = data[4]
-        self.slot_no = data[5]
-        self.rank = data[6]
-        self.class_ = data[7]
-        self.set_id = data[8]
-        self.upgrade_limit = data[9]
-        self.upgrade_curr = data[10]
-        self.base_value = data[11]
-        self.sell_value = data[12]
-        self.pri_eff_type = data[13]
-        self.pri_eff_value = data[14]
-        self.prefix_eff_type = data[15]
-        self.prefix_eff_value = data[16]
-        self.quality = data[17]
-        self.locked = data[18]
-        self.level = data[19]
-        self.original_grade = data[20]
-        self.current_grade = data[21]
-        self.original_quality = data[22]
         
-        # Ajout des noms de stats depuis la base de données
-        self.pri_stat_name = data[23] if len(data) > 23 else None
-        self.prefix_stat_name = data[24] if len(data) > 24 else None
+        # Caractéristiques de base
+        self.slot_no = data[3]
+        self.set_id = data[4]
+        self.quality = data[5]
+        self.level = data[6]
+        self.is_ancient = bool(data[7])
         
+        # Statistique principale
+        self.main_stat_type = data[8]
+        self.main_stat_value = data[9]
+        
+        # Statistique préfixe
+        self.prefix_stat_type = data[10]
+        self.prefix_stat_value = data[11]
+        self.prefix_grind_value = data[12]
+        self.prefix_is_gemmed = bool(data[13])
+        
+        # Sous-statistiques
         self.substats = []
+        for i in range(4):
+            base_idx = 14 + (i * 4)
+            stat_type = data[base_idx]
+            if stat_type:  # Seulement si la sous-stat existe
+                self.substats.append({
+                    'type': stat_type,
+                    'value': data[base_idx + 1],
+                    'grind_value': data[base_idx + 2],
+                    'is_gemmed': bool(data[base_idx + 3]),
+                    'original_type': data[base_idx + 4]
+                })
+        
+        # Référence au monstre équipé
+        self.equipped_monster_id = data[30]
 
     def get_set_name(self):
         """Retourne le nom du set de runes"""
         rune_sets = {
-            1: "energy",
-            2: "guard",
-            3: "swift",
-            4: "blade",
-            5: "rage",
-            6: "focus",
-            7: "endure",
-            8: "fatal",
-            10: "despair",
-            11: "vampire",
-            13: "violent",
-            14: "nemesis",
-            15: "will",
-            16: "shield",
-            17: "revenge",
-            18: "destroy",
-            19: "fight",
-            20: "determination",
-            21: "enhance",
-            22: "accuracy",
-            23: "tolerance",
-            24: "seal",
-            25: "intangible"
+            1: "Energy",
+            2: "Guard",
+            3: "Swift",
+            4: "Blade",
+            5: "Rage",
+            6: "Focus",
+            7: "Endure",
+            8: "Fatal",
+            10: "Despair",
+            11: "Vampire",
+            13: "Violent",
+            14: "Nemesis",
+            15: "Will",
+            16: "Shield",
+            17: "Revenge",
+            18: "Destroy",
+            19: "Fight",
+            20: "Determination",
+            21: "Enhance",
+            22: "Accuracy",
+            23: "Tolerance",
+            24: "Seal",
+            25: "Intangible"
         }
-        return rune_sets.get(self.set_id, "unknown")
+        return rune_sets.get(self.set_id, "Unknown")
+
+    def get_main_stat_display(self):
+        """Affiche la statistique principale avec sa valeur"""
+        return f"{self.main_stat_type}: {self.main_stat_value}"
+
+    def get_prefix_stat_display(self):
+        """Affiche la statistique préfixe avec sa valeur et le bonus de grind"""
+        if not self.prefix_stat_type:
+            return ""
+        
+        display = f"{self.prefix_stat_type}: {self.prefix_stat_value}"
+        if self.prefix_grind_value > 0:
+            display += f" (+{self.prefix_grind_value})"
+        if self.prefix_is_gemmed:
+            display += " [Gemme]"
+        return display
+
+    def get_substats_display(self):
+        """Retourne l'affichage formaté des sous-statistiques"""
+        return "\n".join([
+            self._format_substat(substat)
+            for substat in self.substats
+        ])
+
+    def _format_substat(self, substat):
+        """Formate une sous-statistique pour l'affichage"""
+        display = f"{substat['type']}: {substat['value']}"
+        
+        if substat['grind_value'] > 0:
+            display += f" (+{substat['grind_value']})"
+            
+        if substat['is_gemmed']:
+            display += f" [Gemme: {substat['original_type']}]"
+            
+        return display
 
     def to_table_row(self):
-        """Convert rune data to a table row format"""
+        """Convertit les données de la rune en format ligne de tableau"""
         return [
             self.get_set_name(),
             f"+{self.level}",
             str(self.slot_no),
-            self.quality,
+            self.quality.capitalize(),
             self.get_main_stat_display(),
-            self.get_prefix_stat_display() if self.prefix_eff_type else "",
+            self.get_prefix_stat_display(),
             self.get_substats_display()
         ]
-
-    def set_substats(self, substats):
-        """Définit les sous-statistiques de la rune"""
-        self.substats = substats
-
-    @property
-    def is_ancient(self):
-        """Détermine si la rune est une rune ancienne"""
-        return self.rank == 15 and self.class_ == 16
-
-    def get_main_stat_display(self):
-        """Retourne l'affichage de la statistique principale"""
-        if self.pri_stat_name:
-            return f"{self.pri_stat_name}: {self.pri_eff_value}"
-        return f"{self.get_stat_type_name(self.pri_eff_type)}: {self.pri_eff_value}"
-
-    def get_prefix_stat_display(self):
-        """Retourne l'affichage de la statistique préfixe"""
-        if self.prefix_eff_type and self.prefix_eff_value:
-            if self.prefix_stat_name:
-                return f"{self.prefix_stat_name}: {self.prefix_eff_value}"
-            return f"{self.get_stat_type_name(self.prefix_eff_type)}: {self.prefix_eff_value}"
-        return ""
-
-    def get_substats_display(self):
-        """Retourne l'affichage des sous-statistiques"""
-        return "\n".join([
-            f"{sub.stat_type}: {sub.stat_value}{' +' + str(sub.upgrade_count) if sub.upgrade_count > 0 else ''}"
-            for sub in self.substats
-        ])
-
-    @staticmethod
-    def get_stat_type_name(stat_type_id):
-        """Retourne le nom du type de statistique basé sur son ID"""
-        stat_types = {
-            12: "HP",           # HP_FLAT
-            13: "HP%",          # HP_PCT
-            14: "ATK",          # ATK_FLAT
-            15: "ATK%",         # ATK_PCT
-            16: "DEF",          # DEF_FLAT
-            17: "DEF%",         # DEF_PCT
-            18: "SPD",          # SPD
-            19: "TCC",          # CRIT_RATE
-            20: "DCC",          # CRIT_DMG
-            21: "Res",          # RES
-            22: "Acc"           # ACC
-        }
-        return stat_types.get(stat_type_id, f"Unknown({stat_type_id})")
-
-
-class RuneSubstat:
-    def __init__(self, data):
-        self.id = data[0]
-        self.rune_id = data[1]
-        self.stat_type_id = data[2]
-        self.stat_value = data[3]
-        self.upgrade_count = data[4]
-        self.initial_value = data[5]
-        self.stat_code = data[7] if len(data) > 7 else None
-        self.stat_name = data[8] if len(data) > 8 else None
-        self.stat_description = data[9] if len(data) > 9 else None
-
-    @property
-    def stat_type(self):
-        """Retourne le nom de la statistique"""
-        if self.stat_name:
-            return self.stat_name
-        return self.stat_code or Rune.get_stat_type_name(self.stat_type_id)
-
-    @property
-    def display_value(self):
-        """Retourne la valeur formatée avec le nombre d'améliorations"""
-        value = str(self.stat_value)
-        if self.upgrade_count > 0:
-            value += f" +{self.upgrade_count}"
-        return value
-
-    @property
-    def tooltip(self):
-        """Retourne le texte d'info-bulle avec la description complète"""
-        parts = []
-        if self.stat_description:
-            parts.append(self.stat_description)
-        if self.initial_value is not None:
-            parts.append(f"Valeur initiale: {self.initial_value}")
-        if self.upgrade_count:
-            parts.append(f"Nombre d'améliorations: {self.upgrade_count}")
-        return "\n".join(parts)

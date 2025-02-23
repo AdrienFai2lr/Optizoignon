@@ -1,15 +1,22 @@
 from PyQt6.QtWidgets import (QWidget, QLabel, QFrame, QVBoxLayout, 
                              QSizePolicy, QPushButton, QHBoxLayout)
 from PyQt6.QtGui import QPixmap
-from PyQt6.QtCore import Qt, pyqtSlot
+from PyQt6.QtCore import Qt
 import os
 
-# rune_card.py
 class RuneCard(QFrame):
     def __init__(self, rune, rune_images_dir):
         super().__init__()
         self.rune = rune
         self.rune_images_dir = rune_images_dir
+        
+        # Charger les styles
+        try:
+            with open('styles/styles.qss', 'r') as f:
+                self.setStyleSheet(f.read())
+        except Exception as e:
+            print(f"Erreur lors du chargement des styles: {e}")
+            
         self.setup_ui()
         
     def setup_ui(self):
@@ -38,7 +45,7 @@ class RuneCard(QFrame):
         image_layout.setSpacing(5)
         
         # Image du set
-        set_name = self.rune.get_set_name()
+        set_name = self.rune.get_set_name().lower()
         image_path = os.path.join(self.rune_images_dir, f"{set_name}.png")
         if os.path.exists(image_path):
             rune_image = QLabel()
@@ -57,10 +64,15 @@ class RuneCard(QFrame):
         info_layout.setContentsMargins(0, 0, 0, 0)
         info_layout.setSpacing(5)
         
-        slot_level = QLabel(f"Slot {self.rune.slot_no} | +{self.rune.level}")
+        # Slot, niveau et indicateur ancien
+        slot_text = f"Slot {self.rune.slot_no} | +{self.rune.level}"
+        if self.rune.is_ancient:
+            slot_text += " | Ancient"
+        slot_level = QLabel(slot_text)
         slot_level.setProperty("class", "slot-level")
         info_layout.addWidget(slot_level)
         
+        # Qualité de la rune
         quality = QLabel(self.rune.quality.capitalize())
         quality.setProperty("class", f"quality-{self.rune.quality.lower()}")
         info_layout.addWidget(quality)
@@ -81,23 +93,36 @@ class RuneCard(QFrame):
         main_stat.setAlignment(Qt.AlignmentFlag.AlignCenter)
         stats_layout.addWidget(main_stat)
         
-        # Préfixe
-        if self.rune.prefix_eff_type:
-            prefix_label = QLabel(self.rune.get_prefix_stat_display())
+        # Préfixe avec grind
+        if self.rune.prefix_stat_type:
+            prefix_text = self.rune.get_prefix_stat_display()
+            prefix_label = QLabel(prefix_text)
             prefix_label.setProperty("class", "prefix")
+            if self.rune.prefix_is_gemmed:
+                prefix_label.setProperty("class", "prefix gemmed")
             stats_layout.addWidget(prefix_label)
         
-        # Sous-stats
+        # Sous-stats avec grind et gemmes
         if self.rune.substats:
             for substat in self.rune.substats:
-                substat_text = f"{substat.stat_type}: {substat.stat_value}"
-                if substat.upgrade_count > 0:
-                    substat_text += f" +{substat.upgrade_count}"
+                substat_widget = QWidget()
+                substat_layout = QHBoxLayout(substat_widget)
+                substat_layout.setContentsMargins(0, 0, 0, 0)
+                
+                # Création du texte de la sous-stat
+                substat_text = f"{substat['type']}: {substat['value']}"
+                if substat['grind_value'] > 0:
+                    substat_text += f" (+{substat['grind_value']})"
                 
                 substat_label = QLabel(substat_text)
                 substat_label.setProperty("class", "substat")
-                if substat.tooltip:
-                    substat_label.setToolTip(substat.tooltip)
-                stats_layout.addWidget(substat_label)
+                
+                if substat['is_gemmed']:
+                    substat_label.setProperty("class", "substat gemmed")
+                    tooltip = f"Gemmé (ancienne stat: {substat['original_type']})"
+                    substat_label.setToolTip(tooltip)
+                
+                substat_layout.addWidget(substat_label)
+                stats_layout.addWidget(substat_widget)
         
         self.main_layout.addWidget(stats_container)
