@@ -24,26 +24,40 @@ class RuneGrid(QScrollArea):
         except Exception as e:
             print(f"Erreur lors du chargement du style: {e}")
     
+    # Dans runes_table.py, remplacez la méthode setup_ui()
     def setup_ui(self):
         """Configuration initiale de l'interface utilisateur"""
+        # Widget principal contenant tout
         self.main_widget = QWidget()
         self.main_layout = QVBoxLayout(self.main_widget)
-        self.main_layout.setSpacing(20)
-        self.main_layout.setContentsMargins(20, 20, 20, 20)
+        self.main_layout.setSpacing(10)
+        self.main_layout.setContentsMargins(10, 10, 10, 10)
         
-        # Container pour la grille de runes
+        # Créez un ScrollArea pour le contenu des runes uniquement
+        self.runes_scroll = QScrollArea()
+        self.runes_scroll.setWidgetResizable(True)
+        self.runes_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        
+        # Widget qui contiendra la grille de runes
         self.grid_container = QWidget()
         self.grid_layout = QGridLayout(self.grid_container)
-        self.grid_layout.setSpacing(20)
-        self.grid_layout.setContentsMargins(10, 10, 10, 10)
+        self.grid_layout.setSpacing(10)
+        self.grid_layout.setContentsMargins(5, 5, 5, 5)
         
+        # Ajoutez le widget de grille au scroll area
+        self.runes_scroll.setWidget(self.grid_container)
+        
+        # Créez la pagination
         self.setup_pagination()
         
-        self.main_layout.addWidget(self.grid_container)
-        self.main_layout.addWidget(self.pagination_widget)
+        # Ajoutez les widgets au layout principal
+        self.main_layout.addWidget(self.runes_scroll, 1)  # 1 = stretch factor pour prendre tout l'espace disponible
+        self.main_layout.addWidget(self.pagination_widget, 0)  # 0 = pas de stretch
         
+        # Définissez ce widget comme widget du QScrollArea parent
         self.setWidget(self.main_widget)
         self.setWidgetResizable(True)
+        self.setFrameShape(QFrame.Shape.NoFrame)
         
     def setup_pagination(self):
         """Configuration des contrôles de pagination"""
@@ -89,11 +103,14 @@ class RuneGrid(QScrollArea):
                 widget.setParent(None)
         
         # Ajout des nouvelles runes
-        cols = 5
+        cols = 6  # Augmentez le nombre de colonnes
         for i, rune in enumerate(runes):
             row = i // cols
             col = i % cols
             card = RuneCard(rune, self.rune_images_dir)
+            # Réduire la taille des cartes directement ici
+            card.setMinimumSize(220, 280)  
+            card.setMaximumSize(250, 320)
             self.grid_layout.addWidget(card, row, col)
 
     def goto_previous_page(self):  # Nouvelle méthode

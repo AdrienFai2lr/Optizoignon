@@ -22,11 +22,13 @@ class RuneCard(QFrame):
     def setup_ui(self):
         self.setFrameStyle(QFrame.Shape.NoFrame)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.setMinimumSize(320, 400)
+        # Plus petit pour montrer plus de runes
+        self.setMinimumSize(220, 280)
+        self.setMaximumSize(250, 320)
         
         self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(15, 15, 15, 15)
-        self.main_layout.setSpacing(12)
+        self.main_layout.setContentsMargins(5, 5, 5, 5)  # Réduire les marges
+        self.main_layout.setSpacing(5)  # Réduire l'espacement
         
         self.create_header()
         self.create_stats_section()
