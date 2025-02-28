@@ -18,7 +18,7 @@ class MainWindow(QMainWindow):
         self.monster_controller = MonsterController()
         self.rune_controller = RuneController()
         self.setWindowTitle("OPTIZ-oignoin - Gestion de monstres")
-        self.setMinimumSize(1920, 1080)
+        self.setMinimumSize(1600, 900)
         self.init_ui()
         self.load_monsters()
     
@@ -122,6 +122,10 @@ class MainWindow(QMainWindow):
 
     def load_runes(self, page=1):
         try:
+            # Afficher un indicateur de chargement
+            self.statusBar().showMessage("Chargement des runes...")
+            self.setCursor(Qt.CursorShape.WaitCursor)
+            
             set_filter = self.filter_rune_set.currentText()
             slot_filter = self.filter_slot.currentText()
             
@@ -136,6 +140,9 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f"Page {page}/{total_pages} ({len(runes)} runes)")
         except Exception as err:
             self.statusBar().showMessage(f"Erreur lors du chargement des runes : {str(err)}")
+        finally:
+            # Rétablir le curseur
+            self.setCursor(Qt.CursorShape.ArrowCursor)
 
     def apply_rune_filters(self):
         self.load_runes(page=1)  # Retour à la première page lors du filtrage

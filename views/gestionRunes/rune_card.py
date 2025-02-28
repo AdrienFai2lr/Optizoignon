@@ -9,29 +9,27 @@ class RuneCard(QFrame):
         super().__init__()
         self.rune = rune
         self.rune_images_dir = rune_images_dir
+        self.cached_images = {}  # Cache d'images pour éviter les rechargements
         
-        # Charger les styles
-        try:
-            with open('styles/styles.qss', 'r') as f:
-                self.setStyleSheet(f.read())
-        except Exception as e:
-            print(f"Erreur lors du chargement des styles: {e}")
-            
+        # Réduire les appels de style
         self.setup_ui()
         
     def setup_ui(self):
+        # Réduire les marges et utiliser une mise en page plus légère
         self.setFrameStyle(QFrame.Shape.NoFrame)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        # Plus petit pour montrer plus de runes
         self.setMinimumSize(220, 280)
         self.setMaximumSize(250, 320)
         
         self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(5, 5, 5, 5)  # Réduire les marges
-        self.main_layout.setSpacing(5)  # Réduire l'espacement
+        self.main_layout.setContentsMargins(5, 5, 5, 5)
+        self.main_layout.setSpacing(5)
         
         self.create_header()
         self.create_stats_section()
+        
+        # Désactiver l'interaction pour améliorer les performances
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         
     def create_header(self):
         header = QWidget()
@@ -46,19 +44,26 @@ class RuneCard(QFrame):
         image_layout.setContentsMargins(8, 8, 8, 8)
         image_layout.setSpacing(5)
         
-        # Image du set
+        # Optimisation du chargement d'images
         set_name = self.rune.get_set_name().lower()
         image_path = os.path.join(self.rune_images_dir, f"{set_name}.png")
+        
         if os.path.exists(image_path):
             rune_image = QLabel()
-            pixmap = QPixmap(image_path)
-            scaled_pixmap = pixmap.scaled(50, 50,
+            # Utiliser le cache d'images si possible
+            if set_name in self.cached_images:
+                scaled_pixmap = self.cached_images[set_name]
+            else:
+                pixmap = QPixmap(image_path)
+                scaled_pixmap = pixmap.scaled(50, 50,
                                         Qt.AspectRatioMode.KeepAspectRatio,
-                                        Qt.TransformationMode.SmoothTransformation)
+                                        Qt.TransformationMode.FastTransformation)  # Utiliser FastTransformation
+                self.cached_images[set_name] = scaled_pixmap
+            
             rune_image.setPixmap(scaled_pixmap)
             image_layout.addWidget(rune_image, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        header_layout.addWidget(image_container)
+            header_layout.addWidget(image_container)
         
         # Informations de base
         info_container = QWidget()
