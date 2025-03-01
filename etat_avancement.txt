@@ -14,10 +14,10 @@ gestion runes
     affichage de toute les info y compris grind gemmed
 
     reste a faire : 
-        PV PRC -> PV% AJUSTER VISUEL
-        ESPACEMENT TROP GRAND QUAND C'EST gemmed
-        COULEUR POUR GRIND ?
-        AJOUT IMAGE DU MONSTRE QUI EQUIPE CETTE RUNE PETIT ENCADRER + LIEN DIRECT VERS LE MONSTRE
+        PV PRC -> PV% AJUSTER VISUEL | valide 
+        ESPACEMENT TROP GRAND QUAND C'EST gemmed | pas fais
+        COULEUR POUR GRIND | pas fais
+        AJOUT IMAGE DU MONSTRE QUI EQUIPE CETTE RUNE PETIT ENCADRER + LIEN DIRECT VERS LE MONSTRE | fait
 
 gestion artefact
 

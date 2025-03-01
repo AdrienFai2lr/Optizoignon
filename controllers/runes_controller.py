@@ -133,7 +133,32 @@ class RuneController:
             total_count = runes_data[0][-1] if runes_data else 0
             
             for data in runes_data:
-                runes.append(Rune(data[:-1]))  # Exclure le total_count
+                rune = Rune(data[:-1])  # Exclure le total_count
+                
+                # Si la rune est équipée, récupérer les infos du monstre
+                if rune.equipped_monster_id:
+                    # Appel de la procédure stockée
+                    cursor.execute("CALL getInfoMonstre_par_rune(%s)", (rune.id,))
+                    monster_data = cursor.fetchone()
+                    
+                    # Nécessaire pour récupérer toutes les données
+                    # car après un CALL, nous devons réinitialiser le curseur
+                    if cursor.nextset():
+                        pass
+                    
+                    # Ajout des infos du monstre à l'objet rune
+                    if monster_data:
+                        rune.monster_info = {
+                            'com2us_id': monster_data[0],
+                            'name': monster_data[1],
+                            'image_filename': monster_data[2]
+                        }
+                    else:
+                        rune.monster_info = None
+                else:
+                    rune.monster_info = None
+                
+                runes.append(rune)
             
             return runes, total_count
             

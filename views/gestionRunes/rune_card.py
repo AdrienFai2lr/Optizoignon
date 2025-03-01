@@ -46,7 +46,6 @@ class RuneCard(QFrame):
         # Optimisation du chargement d'images
         set_name = self.rune.get_set_name().lower()
         image_path = os.path.join(self.rune_images_dir, f"{set_name}.png")
-        
         if os.path.exists(image_path):
             rune_image = QLabel()
             # Utiliser le cache d'images si possible
@@ -55,14 +54,13 @@ class RuneCard(QFrame):
             else:
                 pixmap = QPixmap(image_path)
                 scaled_pixmap = pixmap.scaled(50, 50,
-                                        Qt.AspectRatioMode.KeepAspectRatio,
-                                        Qt.TransformationMode.FastTransformation)  # Utiliser FastTransformation
+                                            Qt.AspectRatioMode.KeepAspectRatio,
+                                            Qt.TransformationMode.FastTransformation) # Utiliser FastTransformation
                 self.cached_images[set_name] = scaled_pixmap
-            
             rune_image.setPixmap(scaled_pixmap)
             image_layout.addWidget(rune_image, alignment=Qt.AlignmentFlag.AlignCenter)
-
-            header_layout.addWidget(image_container)
+        
+        header_layout.addWidget(image_container)
         
         # Informations de base
         info_container = QWidget()
@@ -75,7 +73,7 @@ class RuneCard(QFrame):
         slot_level = QLabel(slot_text)
         slot_level.setProperty("class", "slot-level")
         info_layout.addWidget(slot_level)
-
+        
         #si la rune est anciennce on met l'image
         if self.rune.is_ancient:
             ancient_icon = QLabel()
@@ -87,7 +85,7 @@ class RuneCard(QFrame):
                 # Utilisez Qt.KeepAspectRatio pour PyQt6
                 scaled_pixmap = ancient_pixmap.scaled(15, 15, Qt.AspectRatioMode.KeepAspectRatio)
                 ancient_icon.setPixmap(scaled_pixmap)
-                info_layout.addWidget(ancient_icon)
+            info_layout.addWidget(ancient_icon)
         
         # Qualité de la rune
         quality = QLabel(self.rune.quality.capitalize())
@@ -95,6 +93,44 @@ class RuneCard(QFrame):
         info_layout.addWidget(quality)
         
         header_layout.addWidget(info_container)
+        
+        # Ajout de l'image du monstre si la rune est équipée
+        if hasattr(self.rune, 'monster_info') and self.rune.monster_info:
+            monster_container = QFrame()
+            monster_container.setObjectName("monsterContainer")
+            monster_layout = QVBoxLayout(monster_container)
+            monster_layout.setContentsMargins(8, 8, 8, 8)
+            monster_layout.setSpacing(5)
+            
+            # Créer le label pour l'image du monstre
+            monster_image = QLabel()
+            monster_image_path = os.path.join("images/monsters", f"{self.rune.monster_info['image_filename']}")
+            
+            # Vérifier si l'image existe
+            if os.path.exists(monster_image_path):
+                # Clé pour le cache d'images basée sur le chemin du fichier
+                cache_key = f"monster_{self.rune.monster_info['com2us_id']}"
+                
+                # Utiliser le cache si disponible
+                if hasattr(self, 'cached_monster_images') and cache_key in self.cached_monster_images:
+                    scaled_monster_pixmap = self.cached_monster_images[cache_key]
+                else:
+                    monster_pixmap = QPixmap(monster_image_path)
+                    scaled_monster_pixmap = monster_pixmap.scaled(40, 40,
+                                                                Qt.AspectRatioMode.KeepAspectRatio,
+                                                                Qt.TransformationMode.FastTransformation)
+                    
+                    # Initialiser le dictionnaire de cache si nécessaire
+                    if not hasattr(self, 'cached_monster_images'):
+                        self.cached_monster_images = {}
+                        
+                    self.cached_monster_images[cache_key] = scaled_monster_pixmap
+                
+                monster_image.setPixmap(scaled_monster_pixmap)
+                monster_layout.addWidget(monster_image, alignment=Qt.AlignmentFlag.AlignCenter)
+                
+                header_layout.addWidget(monster_container)
+        
         self.main_layout.addWidget(header)
         
     def create_stats_section(self):
