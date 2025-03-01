@@ -172,21 +172,40 @@ class RuneCard(QFrame):
                         scaled_pixmap = gemmed_pixmap.scaled(15, 15, Qt.AspectRatioMode.KeepAspectRatio)
                         gemmed_icon.setPixmap(scaled_pixmap)
                         substat_layout.addWidget(gemmed_icon)
-                        
-                # Création du texte de la sous-stat
-                substat_text = f"{substat['type']}: {substat['value']}"
+                
+                # Création de la partie de base de la sous-stat
+                stat_base_text = f"{substat['type']}: {substat['value']}"
+                
+                # Si la sous-stat a une valeur de grind, on crée un layout horizontal pour contenir les deux labels
                 if substat['grind_value'] > 0:
-                    substat_text += f" (+{substat['grind_value']})"
-                substat_label = QLabel(substat_text)
-                substat_label.setProperty("class", "substat")
+                    # Créer le label pour la valeur de base
+                    base_label = QLabel(stat_base_text)
+                    if substat['is_gemmed']:
+                        base_label.setProperty("class", "substat gemmed")
+                        tooltip = f"Gemmé (ancienne stat: {substat['original_type']})"
+                        base_label.setToolTip(tooltip)
+                    else:
+                        base_label.setProperty("class", "substat")
+                    
+                    substat_layout.addWidget(base_label)
+                    
+                    # Créer le label pour la valeur de grind
+                    grind_label = QLabel(f" (+{substat['grind_value']})")
+                    grind_label.setProperty("class", "substat grind")
+                    substat_layout.addWidget(grind_label)
+                else:
+                    # Pas de grind, on utilise simplement un seul label
+                    substat_label = QLabel(stat_base_text)
+                    if substat['is_gemmed']:
+                        substat_label.setProperty("class", "substat gemmed")
+                        tooltip = f"Gemmé (ancienne stat: {substat['original_type']})"
+                        substat_label.setToolTip(tooltip)
+                    else:
+                        substat_label.setProperty("class", "substat")
+                    
+                    substat_layout.addWidget(substat_label)
                 
-                if substat['is_gemmed']:
-                    substat_label.setProperty("class", "substat gemmed")
-                    tooltip = f"Gemmé (ancienne stat: {substat['original_type']})"
-                    substat_label.setToolTip(tooltip)
-                
-                substat_layout.addWidget(substat_label)
+                # Ajouter le widget de sous-stat au conteneur de stats
                 stats_layout.addWidget(substat_widget)
-            
         
         self.main_layout.addWidget(stats_container)
