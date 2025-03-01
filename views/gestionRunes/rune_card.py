@@ -172,6 +172,7 @@ class RuneCard(QFrame):
                         scaled_pixmap = gemmed_pixmap.scaled(15, 15, Qt.AspectRatioMode.KeepAspectRatio)
                         gemmed_icon.setPixmap(scaled_pixmap)
                         substat_layout.addWidget(gemmed_icon)
+                substat_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
                 
                 # Création de la partie de base de la sous-stat
                 stat_base_text = f"{substat['type']}: {substat['value']}"

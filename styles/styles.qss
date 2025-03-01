@@ -54,10 +54,12 @@ QLabel[class="substat"] {
 }
 
 QLabel[class="substat gemmed"] {
-    color: #27ae60;
-    border-left: 0px solid #27ae60;
-    margin-left: 0;  /* Aucune marge à gauche */
-    padding-left: 0px;  /* Un petit padding pour ne pas coller au bor */
+  color: #27ae60;
+  border-left: 0px solid #27ae60;
+  margin-left: 0; /* Aucune marge à gauche */
+  padding-left: 0px; /* Un petit padding pour ne pas coller au bord */
+  font-size: 14px;
+  text-align: left; /* Alignement explicite du texte à gauche */
 }
 
 QLabel[class="substat grind"] {
