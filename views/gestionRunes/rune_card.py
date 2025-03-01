@@ -159,7 +159,7 @@ class RuneCard(QFrame):
                 substat_widget = QWidget()
                 substat_layout = QHBoxLayout(substat_widget)
                 substat_layout.setContentsMargins(0, 0, 0, 0)
-                
+                #print(self.rune.substats)
                 # Ajouter l'icône si la stat est gemmée
                 if substat['is_gemmed']:
                     gemmed_icon = QLabel()
@@ -204,8 +204,25 @@ class RuneCard(QFrame):
                         substat_label.setProperty("class", "substat")
                     
                     substat_layout.addWidget(substat_label)
+                    
+                    # Ajouter une croix pour les stats non-grindables
+                    if not self.is_grindable_stat(substat['type']):
+                        cross_label = QLabel("✗")  # Symbole de
+                        cross_label.setProperty("class", "substat grind")
+                        cross_label.setToolTip("Cette statistique ne peut pas être grindée")
+                        substat_layout.addWidget(cross_label)
                 
                 # Ajouter le widget de sous-stat au conteneur de stats
                 stats_layout.addWidget(substat_widget)
         
         self.main_layout.addWidget(stats_container)
+    
+    def is_grindable_stat(self, stat_type):
+        """Vérifie si un type de statistique peut être grindé"""
+        # Liste des stats qui ne peuvent pas être grindées
+        non_grindable = [
+            "TC%", "DC%", "RESIS%", "PRECI%", 
+            "Taux Critique", "Dégâts Critiques", "Résistance", "Précision"
+        ]
+        result = stat_type not in non_grindable
+        return result  

@@ -62,6 +62,7 @@ QLabel[class="substat gemmed"] {
 
 QLabel[class="substat grind"] {
     color:rgb(174, 39, 167);
+    font-weight: bold;
 }
 
 /* Styles pour les boutons de pagination */
