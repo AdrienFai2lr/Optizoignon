@@ -76,6 +76,7 @@ class RuneCard(QFrame):
         slot_level.setProperty("class", "slot-level")
         info_layout.addWidget(slot_level)
 
+        #si la rune est anciennce on met l'image
         if self.rune.is_ancient:
             ancient_icon = QLabel()
             ancient_pixmap = QPixmap("images/runes/ancient.png")
@@ -84,7 +85,7 @@ class RuneCard(QFrame):
                 print("Erreur: Impossible de charger l'image 'images/runes/ancient.png'")
             else:
                 # Utilisez Qt.KeepAspectRatio pour PyQt6
-                scaled_pixmap = ancient_pixmap.scaled(20, 20, Qt.AspectRatioMode.KeepAspectRatio)
+                scaled_pixmap = ancient_pixmap.scaled(15, 15, Qt.AspectRatioMode.KeepAspectRatio)
                 ancient_icon.setPixmap(scaled_pixmap)
                 info_layout.addWidget(ancient_icon)
         
@@ -101,7 +102,7 @@ class RuneCard(QFrame):
         stats_container.setProperty("class", "stats-container")
         stats_layout = QVBoxLayout(stats_container)
         stats_layout.setContentsMargins(10, 15, 10, 10)
-        stats_layout.setSpacing(8)
+        stats_layout.setSpacing(10)
         
         # Stat principale
         main_stat = QLabel(self.rune.get_main_stat_display())
@@ -109,13 +110,11 @@ class RuneCard(QFrame):
         main_stat.setAlignment(Qt.AlignmentFlag.AlignCenter)
         stats_layout.addWidget(main_stat)
         
-        # Préfixe avec grind
-        if self.rune.prefix_stat_type:
+        # Préfixe si elle existe alors on l'affiche sinon on ne fait rien ici
+        if self.rune.prefix_stat_type != "UNKNOWN":
             prefix_text = self.rune.get_prefix_stat_display()
             prefix_label = QLabel(prefix_text)
             prefix_label.setProperty("class", "prefix")
-            if self.rune.prefix_is_gemmed:
-                prefix_label.setProperty("class", "prefix gemmed")
             stats_layout.addWidget(prefix_label)
         
         # Sous-stats avec grind et gemmes
@@ -125,11 +124,23 @@ class RuneCard(QFrame):
                 substat_layout = QHBoxLayout(substat_widget)
                 substat_layout.setContentsMargins(0, 0, 0, 0)
                 
+                # Ajouter l'icône si la stat est gemmée
+                if substat['is_gemmed']:
+                    gemmed_icon = QLabel()
+                    gemmed_pixmap = QPixmap("images/runes/enchanted.png")
+                    # Vérifier que le pixmap a bien été chargé
+                    if gemmed_pixmap.isNull():
+                        print("Erreur: Impossible de charger l'image 'images/runes/enchanted.png'")
+                    else:
+                        # Utilisez Qt.KeepAspectRatio pour PyQt6
+                        scaled_pixmap = gemmed_pixmap.scaled(15, 15, Qt.AspectRatioMode.KeepAspectRatio)
+                        gemmed_icon.setPixmap(scaled_pixmap)
+                        substat_layout.addWidget(gemmed_icon)
+                        
                 # Création du texte de la sous-stat
                 substat_text = f"{substat['type']}: {substat['value']}"
                 if substat['grind_value'] > 0:
                     substat_text += f" (+{substat['grind_value']})"
-                
                 substat_label = QLabel(substat_text)
                 substat_label.setProperty("class", "substat")
                 
@@ -140,5 +151,6 @@ class RuneCard(QFrame):
                 
                 substat_layout.addWidget(substat_label)
                 stats_layout.addWidget(substat_widget)
+            
         
         self.main_layout.addWidget(stats_container)

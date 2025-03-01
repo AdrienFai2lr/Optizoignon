@@ -48,12 +48,6 @@ QLabel[class="prefix"] {
     font-size: 14px;
 }
 
-QLabel[class="prefix gemmed"] {
-    color: #27ae60;
-    padding-left: 5px;
-    border-left: 2px solid #27ae60;
-}
-
 QLabel[class="substat"] {
     color: #bdc3c7;
     font-size: 14px;
@@ -61,8 +55,13 @@ QLabel[class="substat"] {
 
 QLabel[class="substat gemmed"] {
     color: #27ae60;
-    padding-left: 5px;
-    border-left: 2px solid #27ae60;
+    border-left: 0px solid #27ae60;
+    margin-left: 0;  /* Aucune marge à gauche */
+    padding-left: 0px;  /* Un petit padding pour ne pas coller au bor */
+}
+
+QLabel[class="substat grind"] {
+    color:rgb(174, 39, 167);
 }
 
 /* Styles pour les boutons de pagination */

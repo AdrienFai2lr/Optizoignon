@@ -1,0 +1,34 @@
+gestion monstre :
+
+    affichage detout les monstes stats element skills explication skills
+
+    AFFICHAGE SOIT DE TOUT LES MONSTRES SOIT DU COMPTE
+
+    RESTE A FAIRE -> AFFICHAGE DE SES RUNES EQUIPE
+
+    STATS + RUNE AJOUTÉ
+
+gestion runes
+
+    affichage de toute les rune d'un compte recupere par un json transferer sur la bdd
+    affichage de toute les info y compris grind gemmed
+
+    reste a faire : 
+        PV PRC -> PV% AJUSTER VISUEL
+        ESPACEMENT TROP GRAND QUAND C'EST gemmed
+        COULEUR POUR GRIND ?
+        AJOUT IMAGE DU MONSTRE QUI EQUIPE CETTE RUNE PETIT ENCADRER + LIEN DIRECT VERS LE MONSTRE
+
+
+
+
+gestion artefact
+
+    IDEM QUE RUNE EN GLOBALITÉ
+    SAUF PAS DE GRIND ICI QUE DES GEMMES
+    PLUS SIMPLE QUE RUNE
+
+opti
+
+    AJOUT OPTI PAS À PAS DES DIFFÉRENT CONTENU
+    
