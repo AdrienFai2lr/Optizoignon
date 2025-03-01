@@ -22,18 +22,19 @@ def sql_format(value):
 
 def get_stat_code(stat_id):
     """Retourne le code de stat basé sur l'ID"""
+    # Correction de la correspondance entre les IDs et les codes
     stat_type_mapping = {
-        1: 'HP_FLAT',
-        2: 'HP_PCT',
-        3: 'ATK_FLAT',
-        4: 'ATK_PCT',
-        5: 'DEF_FLAT',
-        6: 'DEF_PCT',
-        7: 'SPD',
-        8: 'CRIT_RATE',
-        9: 'CRIT_DMG',
-        10: 'RES',
-        11: 'ACC'
+        1: 'HP_FLAT',    # Points de vie fixes
+        2: 'HP_PCT',     # Pourcentage de points de vie
+        3: 'ATK_FLAT',   # Attaque fixe
+        4: 'ATK_PCT',    # Pourcentage d'attaque
+        5: 'DEF_FLAT',   # Défense fixe
+        6: 'DEF_PCT',    # Pourcentage de défense
+        8: 'SPD',        # Vitesse (VIT)
+        9: 'CRIT_RATE',  # Taux Critique (TC)
+        10: 'CRIT_DMG',  # Dégâts Critiques (DC)
+        11: 'RES',       # Résistance
+        12: 'ACC'        # Précision
     }
     return stat_type_mapping.get(stat_id, 'UNKNOWN')
 
@@ -116,12 +117,19 @@ def generate_rune_insert(rune_data, unit_master_id=None):
                 data[f'{base_key}_type'] = get_stat_code(substat[0])
                 data[f'{base_key}_value'] = substat[1]
                 data[f'{base_key}_grind_value'] = substat[3] if len(substat) > 3 else 0
-                data[f'{base_key}_is_gemmed'] = False  # À implémenter avec les données réelles
+                data[f'{base_key}_is_gemmed'] = 1 if (len(substat) > 3 and substat[2] == 1) else 0
+                
+                # Ajout du type original pour les stats gemmées
+                if len(substat) > 3 and substat[2] == 1:
+                    data[f'{base_key}_original_type'] = get_stat_code(substat[4]) if len(substat) > 4 else None
+                else:
+                    data[f'{base_key}_original_type'] = None
             else:
                 data[f'{base_key}_type'] = None
                 data[f'{base_key}_value'] = None
                 data[f'{base_key}_grind_value'] = None
                 data[f'{base_key}_is_gemmed'] = None
+                data[f'{base_key}_original_type'] = None
 
         return query, data
 

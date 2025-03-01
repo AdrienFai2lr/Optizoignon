@@ -73,6 +73,8 @@ class Rune:
             self.equipped_monster_id = data[34] if len(data) > 34 else None
         except IndexError:
             self.equipped_monster_id = None
+        
+        #self.debug_rune() debug rune si probleme d'affi
 
     def get_set_name(self):
         """Retourne le nom du set de runes"""
@@ -157,3 +159,9 @@ class Rune:
             self.get_prefix_stat_display(),
             self.get_substats_display()
         ]
+    def debug_rune(rune):
+        print(f"Rune ID: {rune.id}, Rune game ID: {rune.rune_id}")
+        print(f"Main: {rune.main_stat_type} = {rune.main_stat_value}")
+        print(f"Prefix: {rune.prefix_stat_type} = {rune.prefix_stat_value} (+{rune.prefix_grind_value})")
+        for i, substat in enumerate(rune.substats):
+            print(f"Sub {i+1}: {substat['type']} = {substat['value']} (+{substat.get('grind_value', 0)})")    

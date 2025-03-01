@@ -133,18 +133,9 @@ class RuneController:
             total_count = runes_data[0][-1] if runes_data else 0
             
             for data in runes_data:
-                try:
-                    # Exclure le total_count
-                    rune_data = data[:-1]
-                    runes.append(Rune(rune_data))
-                except Exception as e:
-                    print(f"Erreur lors de la création de la rune ID {data[0] if data else 'inconnue'}: {e}")
+                runes.append(Rune(data[:-1]))  # Exclure le total_count
             
             return runes, total_count
-            
-        except Exception as e:
-            print(f"Erreur dans get_runes: {e}")
-            return [], 0
             
         finally:
             if cursor:
