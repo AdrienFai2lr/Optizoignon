@@ -24,17 +24,17 @@ def get_stat_code(stat_id):
     """Retourne le code de stat basé sur l'ID"""
     # Correction de la correspondance entre les IDs et les codes
     stat_type_mapping = {
-        1: 'HP_FLAT',    # Points de vie fixes
-        2: 'HP_PCT',     # Pourcentage de points de vie
-        3: 'ATK_FLAT',   # Attaque fixe
-        4: 'ATK_PCT',    # Pourcentage d'attaque
-        5: 'DEF_FLAT',   # Défense fixe
-        6: 'DEF_PCT',    # Pourcentage de défense
+        1: 'PV+',    # Points de vie fixes
+        2: 'PV%',     # Pourcentage de points de vie
+        3: 'ATK+',   # Attaque fixe
+        4: 'ATK%',    # Pourcentage d'attaque
+        5: 'DEF+',   # Défense fixe
+        6: 'DEF%',    # Pourcentage de défense
         8: 'SPD',        # Vitesse (VIT)
-        9: 'CRIT_RATE',  # Taux Critique (TC)
-        10: 'CRIT_DMG',  # Dégâts Critiques (DC)
-        11: 'RES',       # Résistance
-        12: 'ACC'        # Précision
+        9: 'TC%',  # Taux Critique (TC)
+        10: 'DC%',  # Dégâts Critiques (DC)
+        11: 'RESIS%',       # Résistance
+        12: 'PRECI%'        # Précision
     }
     return stat_type_mapping.get(stat_id, 'UNKNOWN')
 
