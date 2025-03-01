@@ -10,14 +10,10 @@ gestion monstre :
 
 gestion runes
 
-    affichage de toute les rune d'un compte recupere par un json transferer sur la bdd
-    affichage de toute les info y compris grind gemmed
-
-    reste a faire : 
-        PV PRC -> PV% AJUSTER VISUEL | valide 
-        ESPACEMENT TROP GRAND QUAND C'EST gemmed | pas fais
-        COULEUR POUR GRIND | pas fais
-        AJOUT IMAGE DU MONSTRE QUI EQUIPE CETTE RUNE PETIT ENCADRER + LIEN DIRECT VERS LE MONSTRE | fait
+    good 
+        prochaine ajout :-> eff des runes->trieur des runes par rapport à l'eff, 
+        ajout d'un moyen de savoir quoi ameliorer sur chaque rune etc + estimations meule et grind par set pour opti les runes
+        
 
 gestion artefact
 
