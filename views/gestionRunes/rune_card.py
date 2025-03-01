@@ -10,7 +10,6 @@ class RuneCard(QFrame):
         self.rune = rune
         self.rune_images_dir = rune_images_dir
         self.cached_images = {}  # Cache d'images pour éviter les rechargements
-        
         # Réduire les appels de style
         self.setup_ui()
         
@@ -73,11 +72,21 @@ class RuneCard(QFrame):
         
         # Slot, niveau et indicateur ancien
         slot_text = f"Slot {self.rune.slot_no} | +{self.rune.level}"
-        if self.rune.is_ancient:
-            slot_text += " | Ancient"
         slot_level = QLabel(slot_text)
         slot_level.setProperty("class", "slot-level")
         info_layout.addWidget(slot_level)
+
+        if self.rune.is_ancient:
+            ancient_icon = QLabel()
+            ancient_pixmap = QPixmap("images/runes/ancient.png")
+            # Vérifiez que le pixmap a bien été chargé
+            if ancient_pixmap.isNull():
+                print("Erreur: Impossible de charger l'image 'images/runes/ancient.png'")
+            else:
+                # Utilisez Qt.KeepAspectRatio pour PyQt6
+                scaled_pixmap = ancient_pixmap.scaled(20, 20, Qt.AspectRatioMode.KeepAspectRatio)
+                ancient_icon.setPixmap(scaled_pixmap)
+                info_layout.addWidget(ancient_icon)
         
         # Qualité de la rune
         quality = QLabel(self.rune.quality.capitalize())
