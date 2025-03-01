@@ -81,7 +81,7 @@ class RuneGrid(QScrollArea):
         self.grid_layout.setContentsMargins(5, 5, 5, 5)
         
         # Ajout des nouvelles runes
-        cols = 6
+        cols = 5
         for i, rune in enumerate(runes):
             row = i // cols
             col = i % cols
