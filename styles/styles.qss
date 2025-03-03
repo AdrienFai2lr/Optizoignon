@@ -91,3 +91,36 @@ QLabel#pageLabel {
     color: white;
     font-size: 14px;
 }
+
+QLabel[class="efficiency-stat"] {
+    color: white; /* Texte toujours blanc */
+    background-color: #2c3e50; /* Fond sombre */
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+}
+QLabel[class="efficiency-stat"] {
+    color: white; /* Texte toujours blanc */
+    background-color: #2c3e50; /* Fond sombre */
+    padding: 4px 4px;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* Optionnel : Styles selon l'efficacité */
+QLabel[class="eff-low"] {
+    background-color: #e74c3c; /* Rouge pour faible efficacité */
+}
+
+QLabel[class="eff-medium"] {
+    background-color: #f39c12; /* Orange pour moyenne */
+}
+
+QLabel[class="eff-high"] {
+    background-color: #2ecc71; /* Vert pour haute */
+}
+

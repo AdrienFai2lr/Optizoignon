@@ -23,7 +23,8 @@ class RuneCard(QFrame):
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(5, 5, 5, 5)
         self.main_layout.setSpacing(5)
-        
+        #debut de la gamification des runes comme des carte etc
+        self.create_efficiency_section(self.main_layout)
         self.create_header()
         self.create_stats_section()
                
@@ -69,7 +70,7 @@ class RuneCard(QFrame):
         info_layout = QVBoxLayout(info_container)
         info_layout.setContentsMargins(0, 0, 0, 0)
         info_layout.setSpacing(5)
-        self.create_efficiency_section(info_layout)
+        
         # Slot, niveau et indicateur ancien
         slot_text = f"Slot {self.rune.slot_no} | +{self.rune.level}"
         slot_level = QLabel(slot_text)
@@ -231,31 +232,26 @@ class RuneCard(QFrame):
     
     def create_efficiency_section(self, stats_layout):
         """Crée une section dédiée à l'efficacité"""
-        # Vérifier la valeur exacte
         eff_value = self.rune.get_eff() if hasattr(self, 'rune') else self.get_eff()
-        
-        # Condition modifiée pour afficher pourquoi elle pourrait échouer
+
         if eff_value is not None and eff_value != "Null":
             eff_section = QFrame()
             eff_layout = QVBoxLayout(eff_section)
             eff_layout.setContentsMargins(10, 5, 10, 5)
             eff_layout.setSpacing(5)
-            #print(f"Efficacité : {eff_value}")
-            # Label de l'efficience
+
+            # Création du QLabel
             eff_label = QLabel(f"Eff: {eff_value}")
-            eff_label.setProperty("class", "efficiency-stat")
+            eff_label.setProperty("class", "efficiency-stat")  # Classe par défaut
+
+            # Appliquer un style selon l'efficacité
+            if isinstance(eff_value, (int, float)):
+                if eff_value < 50:
+                    eff_label.setProperty("class", "eff-low")
+                elif eff_value < 75:
+                    eff_label.setProperty("class", "eff-medium")
+                else:
+                    eff_label.setProperty("class", "eff-high")
+
             eff_layout.addWidget(eff_label)
-            # Ajouter la section à la layout des stats
-            stats_layout.addWidget(eff_section)
-        else:
-            eff_section = QFrame()
-            eff_layout = QVBoxLayout(eff_section)
-            eff_layout.setContentsMargins(10, 5, 10, 5)
-            eff_layout.setSpacing(5)
-            #print(f"Efficacité : {eff_value}")
-            # Label de l'efficience
-            eff_label = QLabel(f"Eff: {eff_value}")
-            eff_label.setProperty("class", "efficiency-stat")
-            eff_layout.addWidget(eff_label)
-            # Ajouter la section à la layout des stats
             stats_layout.addWidget(eff_section)
