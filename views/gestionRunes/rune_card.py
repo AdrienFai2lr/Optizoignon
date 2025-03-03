@@ -23,8 +23,15 @@ class RuneCard(QFrame):
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(5, 5, 5, 5)
         self.main_layout.setSpacing(5)
+        self.stats_layout = QVBoxLayout()
+
+        # Création du widget qui représente la rune
+        self.rune_frame = QFrame()  # Assure-toi que c'est bien le bon widget
+        self.rune_frame.setObjectName("runeWidget")  # Nom facultatif pour le debug
+        self.stats_layout.addWidget(self.rune_frame)
+
         #debut de la gamification des runes comme des carte etc
-        self.create_efficiency_section(self.main_layout)
+        self.create_efficiency_section(self.main_layout,self.rune_frame)
         self.create_header()
         self.create_stats_section()
                
@@ -230,8 +237,8 @@ class RuneCard(QFrame):
         result = stat_type not in non_grindable
         return result  
     
-    def create_efficiency_section(self, stats_layout):
-        """Crée une section dédiée à l'efficacité"""
+    def create_efficiency_section(self, stats_layout, rune_widget):
+        """Crée une section dédiée à l'efficacité et applique une bordure autour de la rune"""
         eff_value = self.rune.get_eff() if hasattr(self, 'rune') else self.get_eff()
 
         if eff_value is not None and eff_value != "Null":
@@ -242,16 +249,23 @@ class RuneCard(QFrame):
 
             # Création du QLabel
             eff_label = QLabel(f"Eff: {eff_value}")
-            eff_label.setProperty("class", "efficiency-stat")  # Classe par défaut
+            eff_label.setProperty("class", "efficiency-stat")
 
-            # Appliquer un style selon l'efficacité
+            # Définition de la classe du cadre de la rune
+            rune_widget.setProperty("class", "rune-frame")  # Classe de base
+
+            # Appliquer un style de bordure selon l'efficacité
             if isinstance(eff_value, (int, float)):
                 if eff_value < 50:
-                    eff_label.setProperty("class", "eff-low")
+                    rune_widget.setProperty("class", "rune-frame eff-low")
                 elif eff_value < 75:
-                    eff_label.setProperty("class", "eff-medium")
+                    rune_widget.setProperty("class", "rune-frame eff-medium")
                 else:
-                    eff_label.setProperty("class", "eff-high")
+                    rune_widget.setProperty("class", "rune-frame eff-high")
+
+            # Appliquer les changements de style
+            self.style().unpolish(rune_widget)
+            self.style().polish(rune_widget)
 
             eff_layout.addWidget(eff_label)
             stats_layout.addWidget(eff_section)

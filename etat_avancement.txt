@@ -16,3 +16,81 @@ opti
 
     AJOUT OPTI PAS À PAS DES DIFFÉRENT CONTENU
     
+calcule de l'efficience
+
+la table max stats qui montre le max qu'un hits peut avoir sur chacune des sous stats + prefixe
+
+-> pour la gestion de rune : gamificiation des runes par l'efficience
+
+efficience theorique & efficience theorique max d'une runes
+
+si on part du principe qu'une rune max peut avoir 9 hits
+
+4 hits(correspond au sous stats ) + 4hits (ameliorer au +3 d'une sous stats aleatoire parmis les 4) + valeur prefixe
+
+les 8 hits peuvet etre soit meuler soit gemme donc ameliorer
+
+si on part du principe on a une rune leg
+
+prefixe : 5% precis
+
+hp% 7 + 5
+def% 6 +7
+24spd + 5
+5% atk +10
+
+eff ici -> 109,25%
+
+ici pas de gemme que des grind(meule)
+
+12/8 + 13/8 + 29/6 + 15/8 le tout divisier par 9 => on obtiens la valeur theorique de la rune ca va tourner entre 0 à 140 150
+
+pour obtenir une rune avec son eff theorique max
+
+on reprend les valeurs de la rune
+-> si elle est deja gemme
+    on regemme la valeur gemme par le max si on peut
+    on meule au max chaque stats
+sinon
+    on cherche la valeur des la sous stats la plus basse sans compter la prefixe ni la meule integrer sur la stats
+    dans notre exemple -> 5%atk
+    alors celle ci passe au max pententielle pour une rune "classique" rune ancienne quelque changement a ajoute on pourra juste faire un si ancien ou non pas tres complexe
+    donc ca fait
+
+        7+ 10
+        6 +10
+        24+5
+        gemme 13 +10
+
+
+
+    et la on obtiens la valeur max theorique 
+
+pour l'instant on ne dira pas quoi changer dans la rune peut etre plus tard l'ajout d'un poids en rapport au stats car pv% parexemple a plus d'impact sur un champion que hp flat
+
+1000hp flat sur un perso qui a 12 000hp ou 23 % environ 2600 hp en plus c'est bcp plus rentabke
+
+17/8
+16/8
+29/6
+23/8
+
+on obtiens la valeur theorique maximal de la rune
+
+ici (11.83 / 9) * 100 = 131,48% d'eff
+
+
+gap de 22% d'eff ce qui est enorme donc bon potentiel, interessant ensuite de classe les runes a améliorer en fonction du gap d'efficience
+
+ensuite
+
+par rapport au style de la page -> on va classer par l'efficience, par quadroll(tres rare chance = (1/4)⁴ + si speed (le plus recherche) c'est encore + rare)
+
+sinon sur l'efficience on va creer une bordur lie a la rarete si elle est >120 etc ou < 100
+
+le maximul theorique qu'une rune puisse avoir elle est antique (juste pour les gemme et meule) car y a pas de prerequis sur la stats meme si elle ont plus de stats avec le principe de hits elle rentre dedans
+
+a continuer 
+
+
+

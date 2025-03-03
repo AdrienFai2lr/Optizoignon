@@ -131,8 +131,8 @@ class Rune:
     def get_eff(self):
         """Affiche l'efficience de la rune"""
         if not self.eff_rune:
-            return f"{0}"
-        return f"{self.eff_rune}"
+            return 0
+        return self.eff_rune
 
     def get_substats_display(self):
         """Retourne l'affichage formaté des sous-statistiques"""
