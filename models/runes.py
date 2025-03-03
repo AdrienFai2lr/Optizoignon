@@ -21,7 +21,7 @@ class Rune:
         self.prefix_stat_value = data[11]
         self.prefix_grind_value = data[12]
         self.prefix_is_gemmed = bool(data[13])
-        
+
         # Sous-statistiques
         self.substats = []
         try:
@@ -75,7 +75,11 @@ class Rune:
             self.equipped_monster_id = None
         
         #self.debug_rune() debug rune si probleme d'affi
-
+        
+        #efficeience recuperer
+        self.eff_rune = data[35]
+        #print(self.eff_rune)
+        
     def get_set_name(self):
         """Retourne le nom du set de runes"""
         rune_sets = {
@@ -123,6 +127,13 @@ class Rune:
             display += " [Gemme]"
         return display
 
+    #retourne l'efficience de la rune
+    def get_eff(self):
+        """Affiche l'efficience de la rune"""
+        if not self.eff_rune:
+            return f"{0}"
+        return f"{self.eff_rune}"
+
     def get_substats_display(self):
         """Retourne l'affichage formaté des sous-statistiques"""
         if not self.substats:
@@ -157,7 +168,8 @@ class Rune:
             self.quality.capitalize(),
             self.get_main_stat_display(),
             self.get_prefix_stat_display(),
-            self.get_substats_display()
+            self.get_substats_display(),
+            self.get_eff()
         ]
     def debug_rune(rune):
         print(f"Rune ID: {rune.id}, Rune game ID: {rune.rune_id}")
@@ -165,3 +177,5 @@ class Rune:
         print(f"Prefix: {rune.prefix_stat_type} = {rune.prefix_stat_value} (+{rune.prefix_grind_value})")
         for i, substat in enumerate(rune.substats):
             print(f"Sub {i+1}: {substat['type']} = {substat['value']} (+{substat.get('grind_value', 0)})")    
+
+    

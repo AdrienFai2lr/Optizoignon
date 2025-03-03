@@ -70,6 +70,7 @@ class RuneController:
                 r.sub_stat4_is_gemmed,
                 r.sub_stat4_original_type,
                 r.equipped_monster_id,
+                r.efficiency,
                 COUNT(*) OVER() as total_count
             FROM runes r
             WHERE 1=1
@@ -159,7 +160,7 @@ class RuneController:
                     rune.monster_info = None
                 
                 runes.append(rune)
-            
+            #print(runes_data) -> on recup bien l'eff
             return runes, total_count
             
         finally:

@@ -1,25 +1,16 @@
+faudra faire attention rune equiped sur monstre rta ou pas
+
 gestion monstre :
 
-    affichage detout les monstes stats element skills explication skills
+on passe arte pour l'instant
 
-    AFFICHAGE SOIT DE TOUT LES MONSTRES SOIT DU COMPTE
-
-    RESTE A FAIRE -> AFFICHAGE DE SES RUNES EQUIPE
-
-    STATS + RUNE AJOUTÉ
-
-gestion runes
-
-    good 
-        prochaine ajout :-> eff des runes->trieur des runes par rapport à l'eff, 
-        ajout d'un moyen de savoir quoi ameliorer sur chaque rune etc + estimations meule et grind par set pour opti les runes
+gestion runes :
         
+on passe arte pour l'instant
 
 gestion artefact
 
-    IDEM QUE RUNE EN GLOBALITÉ
-    SAUF PAS DE GRIND ICI QUE DES GEMMES
-    PLUS SIMPLE QUE RUNE
+    gestion now
 
 opti
 
