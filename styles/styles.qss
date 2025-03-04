@@ -2,33 +2,80 @@
 RuneCard {
     background-color: #2a2a2a;
     border-radius: 8px;
-    border: 1px solid #3a3a3a;
+    border: 3px solid #3a3a3a; /* Bordure par défaut plus visible */
+    margin: 5px;
+    padding: 5px;
 }
 
+/* Styles pour les conteneurs d'image */
 #imageContainer {
     background-color: #333333;
     border-radius: 4px;
 }
 
-/* Styles de qualité */
-QLabel[class="quality-normal"] {
-    color: #ffffff;
+/* Styles de bordure selon l'efficacité */
+RuneCard[eff-class="low"] {
+    border: 3px solid #e74c3c; /* Rouge pour faible efficacité */
+    background-color: #2a2a2a;
 }
 
-QLabel[class="quality-magic"] {
-    color: #45c2f3;
+RuneCard[eff-class="medium"] {
+    border: 3px solid #f39c12; /* Orange pour moyenne */
+    background-color: #2a2a2a;
 }
 
-QLabel[class="quality-rare"] {
-    color: #9b59b6;
+RuneCard[eff-class="high"] {
+    border: 3px solid #2ecc71; /* Vert pour haute */
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                      stop: 0 #2a2a2a, stop: 0.05 #2d332d, 
+                      stop: 0.95 #2d332d, stop: 1 #2a2a2a);
 }
 
-QLabel[class="quality-heroic"] {
-    color: #f39c12;
+RuneCard[eff-class="legendary"] {
+    border: 3px solid #9b59b6; /* Violet pour exceptionnelle */
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                      stop: 0 #2a2a2a, stop: 0.05 #322d36, 
+                      stop: 0.95 #322d36, stop: 1 #2a2a2a);
 }
 
-QLabel[class="quality-legendary"] {
-    color: #e74c3c;
+/* Style pour le badge d'efficacité (plus large) */
+QLabel#efficiencyBadge {
+    color: white;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-weight: bold;
+    font-size: 12px;
+    min-width: 65px; /* Plus large pour accommoder des valeurs comme 120.25 */
+    max-width: 80px;
+    margin: 0;
+}
+
+/* Couleurs pour le badge d'efficacité */
+QLabel#efficiencyBadge[eff-class="low"] {
+    background-color: #e74c3c; /* Rouge */
+    border: 1px solid #c0392b;
+}
+
+QLabel#efficiencyBadge[eff-class="medium"] {
+    background-color: #f39c12; /* Orange */
+    border: 1px solid #d35400;
+}
+
+QLabel#efficiencyBadge[eff-class="high"] {
+    background-color: #2ecc71; /* Vert */
+    border: 1px solid #27ae60;
+}
+
+QLabel#efficiencyBadge[eff-class="legendary"] {
+    background-color: #9b59b6; /* Violet */
+    border: 1px solid #8e44ad;
+}
+
+/* Style pour le conteneur du badge d'efficacité */
+QFrame#efficiencyContainer {
+    background-color: transparent;
+    padding: 0;
+    margin: 0;
 }
 
 /* Styles des stats */
@@ -54,17 +101,38 @@ QLabel[class="substat"] {
 }
 
 QLabel[class="substat gemmed"] {
-  color: #27ae60;
-  border-left: 0px solid #27ae60;
-  margin-left: 0; /* Aucune marge à gauche */
-  padding-left: 0px; /* Un petit padding pour ne pas coller au bord */
-  font-size: 14px;
-  text-align: left; /* Alignement explicite du texte à gauche */
+    color: #27ae60;
+    border-left: 0px solid #27ae60;
+    margin-left: 0; /* Aucune marge à gauche */
+    padding-left: 0px; /* Un petit padding pour ne pas coller au bord */
+    font-size: 14px;
+    text-align: left; /* Alignement explicite du texte à gauche */
 }
 
 QLabel[class="substat grind"] {
-    color:rgb(174, 39, 167);
+    color: rgb(174, 39, 167);
     font-weight: bold;
+}
+
+/* Styles de qualité pour le label */
+QLabel[class="quality-normal"] {
+    color: #ffffff;
+}
+
+QLabel[class="quality-magic"] {
+    color: #45c2f3;
+}
+
+QLabel[class="quality-rare"] {
+    color: #9b59b6;
+}
+
+QLabel[class="quality-heroic"] {
+    color: #f39c12;
+}
+
+QLabel[class="quality-legendary"] {
+    color: #e74c3c;
 }
 
 /* Styles pour les boutons de pagination */
@@ -91,55 +159,3 @@ QLabel#pageLabel {
     color: white;
     font-size: 14px;
 }
-
-QLabel[class="efficiency-stat"] {
-    color: white; /* Texte toujours blanc */
-    background-color: #2c3e50; /* Fond sombre */
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 14px;
-    font-weight: bold;
-    text-align: center;
-}
-QLabel[class="efficiency-stat"] {
-    color: white; /* Texte toujours blanc */
-    background-color: #2c3e50; /* Fond sombre */
-    padding: 4px 4px;
-    border-radius: 5px;
-    font-size: 10px;
-    font-weight: bold;
-    text-align: center;
-}
-
-/* Optionnel : Styles selon l'efficacité */
-QLabel[class="eff-low"] {
-    background-color: #e74c3c; /* Rouge pour faible efficacité */
-}
-
-QLabel[class="eff-medium"] {
-    background-color: #f39c12; /* Orange pour moyenne */
-}
-
-QLabel[class="eff-high"] {
-    background-color: #2ecc71; /* Vert pour haute */
-}
-
-QFrame[class="rune-frame"] {
-    border: 3px solid transparent; /* Bordure transparente par défaut */
-    border-radius: 8px; /* Arrondi pour un effet plus propre */
-    padding: 5px;
-}
-
-/* Couleurs de bordure selon l'efficacité */
-QFrame[class="eff-low"] {
-    border-color: #e74c3c; /* Rouge */
-}
-
-QFrame[class="eff-medium"] {
-    border-color: #f39c12; /* Orange */
-}
-
-QFrame[class="eff-high"] {
-    border-color: #2ecc71; /* Vert */
-}
-

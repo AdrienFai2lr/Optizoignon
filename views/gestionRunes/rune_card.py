@@ -10,34 +10,60 @@ class RuneCard(QFrame):
         self.rune = rune
         self.rune_images_dir = rune_images_dir
         self.cached_images = {}  # Cache d'images pour éviter les rechargements
-        # Réduire les appels de style
         self.setup_ui()
         
     def setup_ui(self):
-        # Réduire les marges et utiliser une mise en page plus légère
+        # Configuration de base
         self.setFrameStyle(QFrame.Shape.NoFrame)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.setMinimumSize(220, 280)
         self.setMaximumSize(250, 320)
         
+        # Layout principal pour tout le contenu
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(5, 5, 5, 5)
         self.main_layout.setSpacing(5)
-        self.stats_layout = QVBoxLayout()
-
-        # Création du widget qui représente la rune
-        self.rune_frame = QFrame()  # Assure-toi que c'est bien le bon widget
-        self.rune_frame.setObjectName("runeWidget")  # Nom facultatif pour le debug
-        self.stats_layout.addWidget(self.rune_frame)
-
-        #debut de la gamification des runes comme des carte etc
-        self.create_efficiency_section(self.main_layout,self.rune_frame)
+        
+        # Obtenir la valeur d'efficacité de la rune
+        eff_value = self.rune.get_eff()
+        if eff_value is not None and eff_value != "Null":
+            eff_class = self._get_efficiency_class(eff_value)
+            self.setProperty("eff-class", eff_class)
+            
+            # Créer un layout pour le badge d'efficacité
+            eff_container = QFrame()
+            eff_container.setObjectName("efficiencyContainer")
+            eff_layout = QHBoxLayout(eff_container)
+            eff_layout.setContentsMargins(0, 0, 0, 0)
+            eff_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
+            
+            # Créer le badge d'efficacité
+            eff_badge = QLabel(f"{eff_value}")
+            eff_badge.setObjectName("efficiencyBadge")
+            eff_badge.setProperty("eff-class", eff_class)
+            eff_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            
+            # Ajouter le badge au conteneur
+            eff_layout.addWidget(eff_badge)
+            
+            # Ajouter le conteneur au layout principal
+            self.main_layout.addWidget(eff_container)
+            
+            # Appliquer les styles
+            self.style().unpolish(eff_badge)
+            self.style().polish(eff_badge)
+        
+        # Appliquer les changements de style à la carte
+        self.style().unpolish(self)
+        self.style().polish(self)
+        
+        # Créer les sections de la carte
         self.create_header()
         self.create_stats_section()
-               
+        
         # Désactiver l'interaction pour améliorer les performances
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-        
+    
     def create_header(self):
         header = QWidget()
         header_layout = QHBoxLayout(header)
@@ -63,15 +89,13 @@ class RuneCard(QFrame):
                 pixmap = QPixmap(image_path)
                 scaled_pixmap = pixmap.scaled(50, 50,
                                             Qt.AspectRatioMode.KeepAspectRatio,
-                                            Qt.TransformationMode.FastTransformation) # Utiliser FastTransformation
+                                            Qt.TransformationMode.FastTransformation)
                 self.cached_images[set_name] = scaled_pixmap
             rune_image.setPixmap(scaled_pixmap)
             image_layout.addWidget(rune_image, alignment=Qt.AlignmentFlag.AlignCenter)
         
         header_layout.addWidget(image_container)
 
-        #on va ajoute ici l'effi de la rune + les autres ajout
-        
         # Informations de base
         info_container = QWidget()
         info_layout = QVBoxLayout(info_container)
@@ -84,18 +108,14 @@ class RuneCard(QFrame):
         slot_level.setProperty("class", "slot-level")
         info_layout.addWidget(slot_level)
         
-        #si la rune est anciennce on met l'image
+        # Si la rune est ancienne
         if self.rune.is_ancient:
             ancient_icon = QLabel()
             ancient_pixmap = QPixmap("images/runes/ancient.png")
-            # Vérifiez que le pixmap a bien été chargé
-            if ancient_pixmap.isNull():
-                print("Erreur: Impossible de charger l'image 'images/runes/ancient.png'")
-            else:
-                # Utilisez Qt.KeepAspectRatio pour PyQt6
+            if not ancient_pixmap.isNull():
                 scaled_pixmap = ancient_pixmap.scaled(15, 15, Qt.AspectRatioMode.KeepAspectRatio)
                 ancient_icon.setPixmap(scaled_pixmap)
-            info_layout.addWidget(ancient_icon)
+                info_layout.addWidget(ancient_icon)
         
         # Qualité de la rune
         quality = QLabel(self.rune.quality.capitalize())
@@ -140,6 +160,7 @@ class RuneCard(QFrame):
                 monster_layout.addWidget(monster_image, alignment=Qt.AlignmentFlag.AlignCenter)
                 
                 header_layout.addWidget(monster_container)
+        
         self.main_layout.addWidget(header)
         
     def create_stats_section(self):
@@ -155,8 +176,8 @@ class RuneCard(QFrame):
         main_stat.setAlignment(Qt.AlignmentFlag.AlignCenter)
         stats_layout.addWidget(main_stat)
         
-        # Préfixe si elle existe alors on l'affiche sinon on ne fait rien ici
-        if self.rune.prefix_stat_type != "UNKNOWN":
+        # Préfixe si elle existe
+        if self.rune.prefix_stat_type and self.rune.prefix_stat_type != "UNKNOWN":
             prefix_text = self.rune.get_prefix_stat_display()
             prefix_label = QLabel(prefix_text)
             prefix_label.setProperty("class", "prefix")
@@ -168,56 +189,55 @@ class RuneCard(QFrame):
                 substat_widget = QWidget()
                 substat_layout = QHBoxLayout(substat_widget)
                 substat_layout.setContentsMargins(0, 0, 0, 0)
-                #print(self.rune.substats)
+                
                 # Ajouter l'icône si la stat est gemmée
-                if substat['is_gemmed']:
+                if substat.get('is_gemmed', False):
                     gemmed_icon = QLabel()
                     gemmed_pixmap = QPixmap("images/runes/enchanted.png")
-                    # Vérifier que le pixmap a bien été chargé
-                    if gemmed_pixmap.isNull():
-                        print("Erreur: Impossible de charger l'image 'images/runes/enchanted.png'")
-                    else:
-                        # Utilisez Qt.KeepAspectRatio pour PyQt6
+                    if not gemmed_pixmap.isNull():
                         scaled_pixmap = gemmed_pixmap.scaled(15, 15, Qt.AspectRatioMode.KeepAspectRatio)
                         gemmed_icon.setPixmap(scaled_pixmap)
                         substat_layout.addWidget(gemmed_icon)
+                
                 substat_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
                 
                 # Création de la partie de base de la sous-stat
-                stat_base_text = f"{substat['type']}: {substat['value']}"
+                stat_type = substat.get('type', '')
+                stat_value = substat.get('value', 0)
+                stat_base_text = f"{stat_type}: {stat_value}"
                 
-                # Si la sous-stat a une valeur de grind, on crée un layout horizontal pour contenir les deux labels
-                if substat['grind_value'] > 0:
-                    # Créer le label pour la valeur de base
+                # Gestion des grinds
+                grind_value = substat.get('grind_value', 0)
+                is_gemmed = substat.get('is_gemmed', False)
+                
+                # Si la sous-stat a une valeur de grind
+                if grind_value > 0:
+                    # Label pour la valeur de base
                     base_label = QLabel(stat_base_text)
-                    if substat['is_gemmed']:
-                        base_label.setProperty("class", "substat gemmed")
-                        tooltip = f"Gemmé (ancienne stat: {substat['original_type']})"
-                        base_label.setToolTip(tooltip)
-                    else:
-                        base_label.setProperty("class", "substat")
+                    base_label.setProperty("class", "substat gemmed" if is_gemmed else "substat")
+                    if is_gemmed:
+                        original_type = substat.get('original_type', 'Unknown')
+                        base_label.setToolTip(f"Gemmé (ancienne stat: {original_type})")
                     
                     substat_layout.addWidget(base_label)
                     
-                    # Créer le label pour la valeur de grind
-                    grind_label = QLabel(f" (+{substat['grind_value']})")
+                    # Label pour la valeur de grind
+                    grind_label = QLabel(f" (+{grind_value})")
                     grind_label.setProperty("class", "substat grind")
                     substat_layout.addWidget(grind_label)
                 else:
-                    # Pas de grind, on utilise simplement un seul label
+                    # Pas de grind, un seul label
                     substat_label = QLabel(stat_base_text)
-                    if substat['is_gemmed']:
-                        substat_label.setProperty("class", "substat gemmed")
-                        tooltip = f"Gemmé (ancienne stat: {substat['original_type']})"
-                        substat_label.setToolTip(tooltip)
-                    else:
-                        substat_label.setProperty("class", "substat")
+                    substat_label.setProperty("class", "substat gemmed" if is_gemmed else "substat")
+                    if is_gemmed:
+                        original_type = substat.get('original_type', 'Unknown')
+                        substat_label.setToolTip(f"Gemmé (ancienne stat: {original_type})")
                     
                     substat_layout.addWidget(substat_label)
                     
                     # Ajouter une croix pour les stats non-grindables
-                    if not self.is_grindable_stat(substat['type']):
-                        cross_label = QLabel("✗")  # Symbole de
+                    if not self.is_grindable_stat(stat_type):
+                        cross_label = QLabel("✗")
                         cross_label.setProperty("class", "substat grind")
                         cross_label.setToolTip("Cette statistique ne peut pas être grindée")
                         substat_layout.addWidget(cross_label)
@@ -229,43 +249,21 @@ class RuneCard(QFrame):
     
     def is_grindable_stat(self, stat_type):
         """Vérifie si un type de statistique peut être grindé"""
-        # Liste des stats qui ne peuvent pas être grindées
         non_grindable = [
             "TC%", "DC%", "RESIS%", "PRECI%", 
             "Taux Critique", "Dégâts Critiques", "Résistance", "Précision"
         ]
-        result = stat_type not in non_grindable
-        return result  
+        return stat_type not in non_grindable
     
-    def create_efficiency_section(self, stats_layout, rune_widget):
-        """Crée une section dédiée à l'efficacité et applique une bordure autour de la rune"""
-        eff_value = self.rune.get_eff() if hasattr(self, 'rune') else self.get_eff()
-
-        if eff_value is not None and eff_value != "Null":
-            eff_section = QFrame()
-            eff_layout = QVBoxLayout(eff_section)
-            eff_layout.setContentsMargins(10, 5, 10, 5)
-            eff_layout.setSpacing(5)
-
-            # Création du QLabel
-            eff_label = QLabel(f"Eff: {eff_value}")
-            eff_label.setProperty("class", "efficiency-stat")
-
-            # Définition de la classe du cadre de la rune
-            rune_widget.setProperty("class", "rune-frame")  # Classe de base
-
-            # Appliquer un style de bordure selon l'efficacité
-            if isinstance(eff_value, (int, float)):
-                if eff_value < 50:
-                    rune_widget.setProperty("class", "rune-frame eff-low")
-                elif eff_value < 75:
-                    rune_widget.setProperty("class", "rune-frame eff-medium")
-                else:
-                    rune_widget.setProperty("class", "rune-frame eff-high")
-
-            # Appliquer les changements de style
-            self.style().unpolish(rune_widget)
-            self.style().polish(rune_widget)
-
-            eff_layout.addWidget(eff_label)
-            stats_layout.addWidget(eff_section)
+    def _get_efficiency_class(self, eff_value):
+        """Détermine la classe CSS en fonction de la valeur d'efficacité"""
+        if isinstance(eff_value, (int, float)):
+            if eff_value < 50:
+                return "low"
+            elif eff_value < 75:
+                return "medium"
+            elif eff_value < 90:
+                return "high"
+            else:
+                return "legendary"
+        return "low"  # Valeur par défaut
