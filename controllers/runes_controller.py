@@ -71,6 +71,9 @@ class RuneController:
                 r.sub_stat4_original_type,
                 r.equipped_monster_id,
                 r.efficiency,
+                r.efficience_theorique_max,
+                r.best_gemme_type,
+                r.best_gemme_value,
                 COUNT(*) OVER() as total_count
             FROM runes r
             WHERE 1=1

@@ -79,6 +79,8 @@ class Rune:
         #efficeience recuperer
         self.eff_rune = data[35]
         #print(self.eff_rune)
+        self.eff_theorique_max = data[36]
+        self.remplace_stats_theorique = data[37]
         
     def get_set_name(self):
         """Retourne le nom du set de runes"""
@@ -133,6 +135,18 @@ class Rune:
         if not self.eff_rune:
             return 0
         return self.eff_rune
+    
+    def get_eff_max(self):
+        """ Affiche l'efficience max theorique de la rune"""
+        if not self.eff_theorique_max:
+            return 0
+        return self.eff_theorique_max
+    
+    def get_remplacement_stats(self):
+        """Affiche la nouvelle valeur theorique"""
+        if not self.remplace_stats_theorique:
+            return ""
+        return self.remplace_stats_theorique
 
     def get_substats_display(self):
         """Retourne l'affichage formaté des sous-statistiques"""
@@ -169,7 +183,9 @@ class Rune:
             self.get_main_stat_display(),
             self.get_prefix_stat_display(),
             self.get_substats_display(),
-            self.get_eff()
+            self.get_eff(),
+            self.get_eff_max(),
+            self.get_remplacement_stats()
         ]
     def debug_rune(rune):
         print(f"Rune ID: {rune.id}, Rune game ID: {rune.rune_id}")

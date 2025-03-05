@@ -36,9 +36,10 @@ class RuneCard(QFrame):
             eff_layout = QHBoxLayout(eff_container)
             eff_layout.setContentsMargins(0, 0, 0, 0)
             eff_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
-            
+            #
+            eff_value_max = self.rune.get_eff_max();
             # Créer le badge d'efficacité
-            eff_badge = QLabel(f"{eff_value}")
+            eff_badge = QLabel(f"{float(eff_value):.2f} | {float(eff_value_max):.2f}")
             eff_badge.setObjectName("efficiencyBadge")
             eff_badge.setProperty("eff-class", eff_class)
             eff_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)

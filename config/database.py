@@ -3,7 +3,7 @@ class DatabaseConfig:
     HOST = "localhost"
     DATABASE = "summoners_war"
     USER = "root"  # À modifier selon votre configuration
-    PASSWORD = ""  # À modifier selon votre configuration
+    PASSWORD = "Velo29610."  # À modifier selon votre configuration
     PORT = 3306
 
     @staticmethod
