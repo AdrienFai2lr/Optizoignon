@@ -81,6 +81,8 @@ class Rune:
         #print(self.eff_rune)
         self.eff_theorique_max = data[36]
         self.remplace_stats_theorique = data[37]
+        self.stats_value_remplacement= data[38]
+        self.laStat_remplacer = data[39]
         
     def get_set_name(self):
         """Retourne le nom du set de runes"""
@@ -147,6 +149,12 @@ class Rune:
         if not self.remplace_stats_theorique:
             return ""
         return self.remplace_stats_theorique
+    
+    def get_worst_stat_number(self):
+        """return le numero de la pire sous stats qui est remplacer"""
+        if not self.laStat_remplacer:
+            return ""
+        return self.laStat_remplacer
 
     def get_substats_display(self):
         """Retourne l'affichage formaté des sous-statistiques"""
