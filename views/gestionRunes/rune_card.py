@@ -10,6 +10,8 @@ class RuneCard(QFrame):
         self.rune = rune
         self.rune_images_dir = rune_images_dir
         self.cached_images = {}  # Cache d'images pour éviter les rechargements
+        self.showing_replacement_indicators = False  # Attribut pour suivre l'état
+        self.worst_stat_indicator = None  # Pour stocker la référence à l'indicateur
         self.setup_ui()
         
     def setup_ui(self):
@@ -37,9 +39,6 @@ class RuneCard(QFrame):
             eff_layout.setContentsMargins(0, 0, 0, 0)
             eff_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
             
-            # Obtenir l'efficacité maximale
-            eff_value_max = self.rune.get_eff_max()
-            
             # Créer le badge d'efficacité actuelle
             eff_badge = QLabel(f"{float(eff_value):.2f}")
             eff_badge.setObjectName("efficiencyBadge")
@@ -48,35 +47,29 @@ class RuneCard(QFrame):
             
             # Ajouter le badge d'efficacité actuelle
             eff_layout.addWidget(eff_badge)
-                        
-            # Ajouter le badge d'efficacité maximale
-            eff_max_badge = QLabel(f"{float(eff_value_max):.2f}")
-            eff_max_badge.setObjectName("efficiencyMaxBadge")
-            eff_layout.addWidget(eff_max_badge)
             
             # Ajouter le bouton œil uniquement si la rune est de niveau 12+
             if hasattr(self.rune, 'level') and isinstance(self.rune.level, (int, float)) and self.rune.level >= 12:
-                eye_button = QPushButton()
-                eye_button.setObjectName("eyeButton")
-                eye_button.setMaximumSize(20, 20)
-                eye_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+                # Ajouter le badge d'efficacité maximale avec function d'œil
+                eff_value_max = self.rune.get_eff_max()
+                eff_max_button = QPushButton(f"{float(eff_value_max):.2f}")
+                eff_max_button.setObjectName("efficiencyMaxButton")
                 
-                # Charger l'icône d'œil (assurez-vous que le fichier existe)
-                eye_icon_path = os.path.join("images/icons", "eye.png")
-                if os.path.exists(eye_icon_path):
-                    eye_pixmap = QPixmap(eye_icon_path)
-                    eye_pixmap = eye_pixmap.scaled(16, 16, Qt.AspectRatioMode.KeepAspectRatio)
-                    eye_button.setIcon(QPixmap(eye_pixmap))
-                else:
-                    # Utiliser un texte comme alternative si l'image n'existe pas
-                    eye_button.setText("👁️")
-                    eye_button.setStyleSheet("font-size: 10px; padding: 0;")
+                # Configuration du bouton pour ressembler à un badge mais être cliquable
+                eff_max_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+                eff_max_button.setStyleSheet("font-size: 12px; padding: 2px 5px;")
                 
-                # Connecter le bouton à la fonction d'affichage des infos de remplacement
-                eye_button.clicked.connect(self.show_stat_replacement_info)
+                # Connecter le bouton au toggle
+                eff_max_button.clicked.connect(self.toggle_stat_replacement_info)
                 
-                # Ajouter le bouton œil au conteneur
-                eff_layout.addWidget(eye_button)
+                # Ajouter le bouton d'efficacité max au conteneur
+                eff_layout.addWidget(eff_max_button)
+            else:
+                # Pour les runes de niveau <12, ajouter simplement le label standard
+                eff_value_max = self.rune.get_eff_max()
+                eff_max_badge = QLabel(f"{float(eff_value_max):.2f}")
+                eff_max_badge.setObjectName("efficiencyMaxBadge")
+                eff_layout.addWidget(eff_max_badge)
             
             # Ajouter le conteneur au layout principal
             self.main_layout.addWidget(eff_container)
@@ -93,13 +86,22 @@ class RuneCard(QFrame):
         self.create_header()
         self.create_stats_section()
         
-        # Ne pas désactiver l'interaction pour permettre le clic sur le bouton œil si niveau >=12
+        # Ne pas désactiver l'interaction pour permettre le clic sur le bouton efficacité max si niveau >=12
         if hasattr(self.rune, 'level') and isinstance(self.rune.level, (int, float)) and self.rune.level >= 12:
-            # Ne pas désactiver l'interaction pour permettre le clic sur l'œil
+            # Ne pas désactiver l'interaction pour permettre le clic
             pass
         else:
             # Désactiver l'interaction pour les runes de niveau <12
             self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+    
+    def toggle_stat_replacement_info(self):
+        """Alterne l'affichage des informations de remplacement de stats théoriques"""
+        if self.showing_replacement_indicators:
+            self.hide_replacement_indicators()
+            # Cacher le tooltip quand on désactive
+            QToolTip.hideText()
+        else:
+            self.show_stat_replacement_info()
     
     def show_stat_replacement_info(self):
         """Affiche les informations de remplacement de stats théoriques"""
@@ -148,6 +150,31 @@ class RuneCard(QFrame):
         
         # Afficher l'info en tooltip près du curseur
         QToolTip.showText(QCursor.pos(), info_text, self)
+        
+        # Mettre à jour l'état pour indiquer que les indicateurs sont affichés
+        self.showing_replacement_indicators = True
+        
+        # Rafraîchir la section des stats pour afficher les indicateurs
+        self.refresh_stats_section()
+    
+    def hide_replacement_indicators(self):
+        """Cache les indicateurs de remplacement de stats"""
+        # Mettre à jour l'état pour indiquer que les indicateurs sont masqués
+        self.showing_replacement_indicators = False
+        
+        # Rafraîchir la section des stats pour masquer les indicateurs
+        self.refresh_stats_section()
+    
+    def refresh_stats_section(self):
+        """Actualise la section des stats pour refléter l'état actuel des indicateurs"""
+        # Supprimer l'ancienne section
+        for i in reversed(range(self.main_layout.count())):
+            item = self.main_layout.itemAt(i).widget()
+            if item and item.property("class") == "stats-container":
+                item.deleteLater()
+        
+        # Recréer la section avec l'état actuel
+        self.create_stats_section()
     
     def create_header(self):
         header = QWidget()
@@ -268,28 +295,29 @@ class RuneCard(QFrame):
             prefix_label.setProperty("class", "prefix")
             stats_layout.addWidget(prefix_label)
         
-        # Obtenir l'index de la pire stat (si disponible)
+        # Obtenir l'index de la pire stat (si disponible et si mode d'affichage activé)
         worst_stat_idx = None
-        try:
-            if hasattr(self.rune, 'level') and isinstance(self.rune.level, (int, float)) and self.rune.level >= 12:
-                worst_stat_idx = self.rune.get_worst_stat_number()
-                
-                # Vérifier si l'index est un nombre et le convertir
-                if isinstance(worst_stat_idx, str):
-                    try:
-                        worst_stat_num = int(worst_stat_idx)
-                        # Vérifier si l'index est dans la plage valide (1-4)
-                        if 1 <= worst_stat_num <= 4:
-                            worst_stat_idx = worst_stat_num
-                        else:
-                            print(f"Avertissement: Index de sous-stat hors plage: {worst_stat_num}")
-                            worst_stat_idx = None  # Ignorer les indices hors plage
-                    except ValueError:
-                        # Pas un nombre valide
-                        worst_stat_idx = None
-        except Exception as e:
-            print(f"Erreur lors de l'accès à get_worst_stat_number: {e}")
-            worst_stat_idx = None
+        if self.showing_replacement_indicators:  # Vérifier si l'affichage est activé
+            try:
+                if hasattr(self.rune, 'level') and isinstance(self.rune.level, (int, float)) and self.rune.level >= 12:
+                    worst_stat_idx = self.rune.get_worst_stat_number()
+                    
+                    # Vérifier si l'index est un nombre et le convertir
+                    if isinstance(worst_stat_idx, str):
+                        try:
+                            worst_stat_num = int(worst_stat_idx)
+                            # Vérifier si l'index est dans la plage valide (1-4)
+                            if 1 <= worst_stat_num <= 4:
+                                worst_stat_idx = worst_stat_num
+                            else:
+                                print(f"Avertissement: Index de sous-stat hors plage: {worst_stat_num}")
+                                worst_stat_idx = None  # Ignorer les indices hors plage
+                        except ValueError:
+                            # Pas un nombre valide
+                            worst_stat_idx = None
+            except Exception as e:
+                print(f"Erreur lors de l'accès à get_worst_stat_number: {e}")
+                worst_stat_idx = None
         
         # Sous-stats avec grind et gemmes
         if self.rune.substats:
@@ -298,22 +326,22 @@ class RuneCard(QFrame):
                 
                 # Vérifier si c'est la pire stat pour appliquer un style spécial
                 is_worst_stat = False
-                if worst_stat_idx is not None:
+                if self.showing_replacement_indicators and worst_stat_idx is not None:
                     if worst_stat_idx == i:
                         is_worst_stat = True
+                        substat_widget.setProperty("class", "worst-stat-widget")
                 
-                if is_worst_stat:
-                    substat_widget.setProperty("class", "worst-stat-widget")
-                    
                 substat_layout = QHBoxLayout(substat_widget)
                 substat_layout.setContentsMargins(0, 0, 0, 0)
                 
-                # Ajouter une icône de warning si c'est la pire stat
+                # Ajouter une icône de warning si c'est la pire stat et que l'affichage est activé
                 if is_worst_stat:
                     worst_icon = QLabel("⚠️")  # Emoji d'avertissement
                     worst_icon.setProperty("class", "worst-stat-icon")
                     worst_icon.setToolTip("Statistique recommandée à remplacer")
                     substat_layout.addWidget(worst_icon)
+                    # Stocker la référence à l'icône pour pouvoir la gérer plus tard
+                    self.worst_stat_indicator = worst_icon
                 
                 # Ajouter l'icône si la stat est gemmée
                 if substat.get('is_gemmed', False):
