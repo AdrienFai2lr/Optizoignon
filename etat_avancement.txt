@@ -103,3 +103,14 @@ quad roll spd -> ultime
 <90 ->
 
 divine, Royal ,eclair ,Elite,précieuse,fiable,Basique
+
+
+
+
+partie efficience good
+
+partie efficience max theorique good
+
+pour la partie effi theorique max peut etre ajoute un "poids" des gemme etc en fonction de la rune plus tard par exemple si la rune a des stats plutot atk faut la mettre atk
+etc
+
