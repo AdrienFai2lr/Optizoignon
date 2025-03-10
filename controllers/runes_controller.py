@@ -75,6 +75,7 @@ class RuneController:
                 r.best_gemme_type,
                 r.best_gemme_value,
                 r.worst_stat_number,
+                r.classification,
                 COUNT(*) OVER() as total_count
             FROM runes r
             WHERE 1=1

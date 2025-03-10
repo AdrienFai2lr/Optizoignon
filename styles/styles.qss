@@ -1,8 +1,7 @@
-/* Styles pour les cartes de runes */
+/* Styles de base pour les cartes de runes */
 RuneCard {
     background-color: #2a2a2a;
     border-radius: 8px;
-    border: 3px solid #3a3a3a; /* Bordure par défaut plus visible */
     margin: 5px;
     padding: 5px;
 }
@@ -13,62 +12,99 @@ RuneCard {
     border-radius: 4px;
 }
 
-/* Styles de bordure selon l'efficacité */
-RuneCard[eff-class="low"] {
-    border: 3px solid #e74c3c; /* Rouge pour faible efficacité */
+/* Classifications avec textures sur les bordures uniquement */
+RuneCard[eff-class="goat"],
+RuneCard[eff-class="ultime"],
+RuneCard[eff-class="magistral"],
+RuneCard[eff-class="divine"],
+RuneCard[eff-class="precieuse"],
+RuneCard[eff-class="fiable"],
+RuneCard[eff-class="basique"] {
+    border: 5px solid transparent;
     background-color: #2a2a2a;
 }
 
-RuneCard[eff-class="medium"] {
-    border: 3px solid #f39c12; /* Orange pour moyenne */
+RuneCard[eff-class="goat"] {
+    border-image: url(images/textures/goat_texture.jpg) 5 5 5 5;
+}
+
+RuneCard[eff-class="ultime"] {
+    border-image: url(images/textures/ultime_texture.jpg) 5 5 5 5;
+}
+
+RuneCard[eff-class="magistral"] {
+    border-image: url(images/textures/magistral_texture.jpg) 5 5 5 5;
+}
+
+RuneCard[eff-class="divine"] {
+    border-image: url(images/textures/divine_texture.jpg) 5 5 5 5;
+}
+
+RuneCard[eff-class="precieuse"] {
+    border-image: url(images/textures/precieuse_texture.jpg) 5 5 5 5;
+}
+
+RuneCard[eff-class="fiable"] {
+    border-image: url(images/textures/fiable_texture.jpg) 5 5 5 5;
+}
+
+RuneCard[eff-class="basique"] {
+    border-image: url(images/textures/basique_texture.jpg) 5 5 5 5;
+}
+
+/* Arrière-plan de la section stats pour assurer la lisibilité */
+QFrame[class="stats-container"] {
     background-color: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    margin-top: 8px;
+    padding: 5px;
 }
 
-RuneCard[eff-class="high"] {
-    border: 3px solid #2ecc71; /* Vert pour haute */
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                      stop: 0 #2a2a2a, stop: 0.05 #2d332d, 
-                      stop: 0.95 #2d332d, stop: 1 #2a2a2a);
-}
-
-RuneCard[eff-class="legendary"] {
-    border: 3px solid #9b59b6; /* Violet pour exceptionnelle */
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                      stop: 0 #2a2a2a, stop: 0.05 #322d36, 
-                      stop: 0.95 #322d36, stop: 1 #2a2a2a);
-}
-
-/* Style pour le badge d'efficacité (plus large) */
+/* Style pour le badge d'efficacité */
 QLabel#efficiencyBadge {
     color: white;
     border-radius: 4px;
     padding: 2px 6px;
     font-weight: bold;
     font-size: 12px;
-    min-width: 65px; /* Plus large pour accommoder des valeurs comme 120.25 */
+    min-width: 65px;
+    max-width: 80px;
+    margin: 0;
+    background-color: rgba(42, 42, 42, 0.95);
+    border: 1px solid #3a3a3a;
+}
+
+/* Style pour le bouton d'efficacité maximale */
+QPushButton#efficiencyMaxButton {
+    color: white;
+    background-color: rgba(42, 42, 42, 0.95);
+    border: 1px solid #3a3a3a;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-weight: bold;
+    font-size: 12px;
+    min-width: 65px;
     max-width: 80px;
     margin: 0;
 }
 
-/* Couleurs pour le badge d'efficacité */
-QLabel#efficiencyBadge[eff-class="low"] {
-    background-color: #e74c3c; /* Rouge */
-    border: 1px solid #c0392b;
+QPushButton#efficiencyMaxButton:hover {
+    background-color: #3a3a3a;
 }
 
-QLabel#efficiencyBadge[eff-class="medium"] {
-    background-color: #f39c12; /* Orange */
-    border: 1px solid #d35400;
-}
-
-QLabel#efficiencyBadge[eff-class="high"] {
-    background-color: #2ecc71; /* Vert */
-    border: 1px solid #27ae60;
-}
-
-QLabel#efficiencyBadge[eff-class="legendary"] {
-    background-color: #9b59b6; /* Violet */
-    border: 1px solid #8e44ad;
+/* Style pour le badge d'efficacité max */
+QLabel#efficiencyMaxBadge {
+    color: white;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-weight: bold;
+    font-size: 12px;
+    min-width: 65px;
+    max-width: 80px;
+    margin: 0;
+    background-color: rgba(42, 42, 42, 0.95);
+    border: 1px solid #3a3a3a;
 }
 
 /* Style pour le conteneur du badge d'efficacité */
@@ -78,7 +114,38 @@ QFrame#efficiencyContainer {
     margin: 0;
 }
 
-/* Styles des stats */
+/* Styles de base pour tous les labels */
+QLabel[class="slot-level"],
+QLabel[class="main-stat"],
+QLabel[class="prefix"],
+QLabel[class="quality-normal"],
+QLabel[class="quality-magic"],
+QLabel[class="quality-rare"],
+QLabel[class="quality-heroic"],
+QLabel[class="quality-legendary"] {
+    background-color: transparent;
+    margin: 1px 0;
+    padding: 1px;
+}
+
+/* Nouveau style pour la ligne complète de sous-stat */
+QLabel[class="substat-line"] {
+    color: #bdc3c7;
+    font-size: 14px;
+    background-color: transparent;
+    margin: 1px 0;
+    padding: 2px;
+}
+
+QLabel[class="substat-line gemmed"] {
+    color: #27ae60;
+    font-size: 14px;
+    background-color: transparent;
+    margin: 1px 0;
+    padding: 2px;
+}
+
+/* Styles spécifiques pour chaque type de label */
 QLabel[class="slot-level"] {
     color: #ffffff;
     font-size: 14px;
@@ -95,23 +162,17 @@ QLabel[class="prefix"] {
     font-size: 14px;
 }
 
-QLabel[class="substat"] {
-    color: #bdc3c7;
-    font-size: 14px;
+/* Style pour l'icône de la pire stat */
+QLabel[class="worst-stat-icon"] {
+    min-width: 15px;
+    max-width: 15px;
 }
 
-QLabel[class="substat gemmed"] {
-    color: #27ae60;
-    border-left: 0px solid #27ae60;
-    margin-left: 0; /* Aucune marge à gauche */
-    padding-left: 0px; /* Un petit padding pour ne pas coller au bord */
-    font-size: 14px;
-    text-align: left; /* Alignement explicite du texte à gauche */
-}
-
-QLabel[class="substat grind"] {
-    color: rgb(174, 39, 167);
-    font-weight: bold;
+/* Widget contenant la pire stat */
+QWidget[class="worst-stat-widget"] {
+    background-color: rgba(231, 76, 60, 0.3);
+    border-radius: 3px;
+    padding: 2px;
 }
 
 /* Styles de qualité pour le label */
@@ -158,4 +219,7 @@ QPushButton:disabled {
 QLabel#pageLabel {
     color: white;
     font-size: 14px;
+    background-color: rgba(42, 42, 42, 0.95);
+    border-radius: 3px;
+    padding: 2px 4px;
 }

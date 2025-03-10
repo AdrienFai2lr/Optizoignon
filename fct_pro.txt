@@ -1,0 +1,241 @@
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `calculate_stat_hits`(
+    IN stat_type_param VARCHAR(20),
+    IN stat_value_param FLOAT,
+    IN is_ancient_param TINYINT,
+    OUT hits_result FLOAT
+)
+BEGIN
+    DECLARE max_value FLOAT DEFAULT 0;
+    DECLARE meule_value FLOAT DEFAULT 0;
+    
+    -- Obtenir la valeur max pour cette stat
+    SET max_value = get_max_substat_value(stat_type_param);
+    
+    -- Obtenir la valeur de meule max
+    SET meule_value = get_meule_max_value(stat_type_param, is_ancient_param);
+    
+    -- Calculer les hits
+    IF max_value > 0 THEN
+        SET hits_result = (stat_value_param + IFNULL(meule_value, 0)) / max_value;
+    ELSE
+        SET hits_result = 0;
+    END IF;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getInfoMonstre_par_rune`(IN `id_rune` INT)
+BEGIN
+    SELECT 
+        m.com2us_id,
+        m.name,
+        m.image_filename
+    FROM runes r
+    LEFT JOIN monsters m ON r.equipped_monster_id = m.com2us_id
+    WHERE r.id = id_rune;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` FUNCTION `get_max_substat_value`(stat_type_param VARCHAR(20)) RETURNS float
+    DETERMINISTIC
+BEGIN
+    DECLARE max_stat_value FLOAT DEFAULT 0;
+    
+    -- Utiliser uniquement PV%, ne pas convertir en HP%
+    SELECT IFNULL(max_value, 0) INTO max_stat_value FROM max_substats WHERE stat_type = stat_type_param;
+    
+    RETURN max_stat_value;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` FUNCTION `get_meule_max_value`(stat_type_param VARCHAR(20), is_ancient_param TINYINT) RETURNS float
+    DETERMINISTIC
+BEGIN
+    DECLARE meule_value FLOAT DEFAULT 0;
+    
+    -- Pour runes antiques
+    IF is_ancient_param = 1 THEN
+        -- Utiliser uniquement PV%, ne pas convertir en HP%
+        SELECT IFNULL(max_value, 0) INTO meule_value FROM max_meule_antique WHERE stat_type = stat_type_param;
+    -- Pour runes normales
+    ELSE
+        -- Utiliser uniquement PV%, ne pas convertir en HP%
+        SELECT IFNULL(max_value, 0) INTO meule_value FROM max_meule WHERE stat_type = stat_type_param;
+    END IF;
+    
+    RETURN meule_value;
+END$$
+DELIMITER ;
+
+
+CREATE TRIGGER `calculate_efficience_theorique_max_insert` BEFORE INSERT ON `runes`
+ FOR EACH ROW efficiency_max_insert_label:BEGIN
+    DECLARE total_hits_max FLOAT DEFAULT 0;
+    DECLARE max_grind_value1 FLOAT DEFAULT 0;
+    DECLARE max_grind_value2 FLOAT DEFAULT 0;
+    DECLARE max_grind_value3 FLOAT DEFAULT 0;
+    DECLARE max_grind_value4 FLOAT DEFAULT 0;
+    
+    -- Calcul pour le prefix_stat_type si existant
+    -- Le préfixe ne peut pas être meulé, donc pas d'ajout de valeur de meule ici
+    IF NEW.prefix_stat_type IS NOT NULL AND NEW.prefix_stat_type != '' THEN
+        -- Calculer les hits directement sans meule pour le préfixe
+        SET @max_val = get_max_substat_value(NEW.prefix_stat_type);
+        IF @max_val > 0 THEN
+            SET total_hits_max = total_hits_max + (NEW.prefix_stat_value / @max_val);
+        END IF;
+    END IF;
+    
+    -- Calcul pour chaque sous-statistique
+    -- Sub stat 1
+    IF NEW.sub_stat1_type IS NOT NULL AND NEW.sub_stat1_type != '' THEN
+        -- Déterminer la meilleure valeur de meule pour sub_stat1
+        IF NEW.is_ancient = 1 THEN
+            SELECT max_value INTO max_grind_value1
+            FROM max_meule_antique
+            WHERE stat_type = NEW.sub_stat1_type;
+        ELSE
+            SELECT max_value INTO max_grind_value1
+            FROM max_meule
+            WHERE stat_type = NEW.sub_stat1_type;
+        END IF;
+        
+        IF max_grind_value1 IS NULL THEN
+            SET max_grind_value1 = 0;
+        END IF;
+        
+        SET NEW.sub_stat1_best_grind_value = max_grind_value1;
+        
+        -- Calculer les hits pour la sous-stat avec la meule
+        SET @max_val = get_max_substat_value(NEW.sub_stat1_type);
+        IF @max_val > 0 THEN
+            SET total_hits_max = total_hits_max + ((NEW.sub_stat1_value + max_grind_value1) / @max_val);
+        END IF;
+    END IF;
+    
+    -- Sub stat 2
+    IF NEW.sub_stat2_type IS NOT NULL AND NEW.sub_stat2_type != '' THEN
+        -- Déterminer la meilleure valeur de meule pour sub_stat2
+        IF NEW.is_ancient = 1 THEN
+            SELECT max_value INTO max_grind_value2
+            FROM max_meule_antique
+            WHERE stat_type = NEW.sub_stat2_type;
+        ELSE
+            SELECT max_value INTO max_grind_value2
+            FROM max_meule
+            WHERE stat_type = NEW.sub_stat2_type;
+        END IF;
+        
+        IF max_grind_value2 IS NULL THEN
+            SET max_grind_value2 = 0;
+        END IF;
+        
+        SET NEW.sub_stat2_best_grind_value = max_grind_value2;
+        
+        -- Calculer les hits pour la sous-stat avec la meule
+        SET @max_val = get_max_substat_value(NEW.sub_stat2_type);
+        IF @max_val > 0 THEN
+            SET total_hits_max = total_hits_max + ((NEW.sub_stat2_value + max_grind_value2) / @max_val);
+        END IF;
+    END IF;
+    
+    -- Sub stat 3
+    IF NEW.sub_stat3_type IS NOT NULL AND NEW.sub_stat3_type != '' THEN
+        -- Déterminer la meilleure valeur de meule pour sub_stat3
+        IF NEW.is_ancient = 1 THEN
+            SELECT max_value INTO max_grind_value3
+            FROM max_meule_antique
+            WHERE stat_type = NEW.sub_stat3_type;
+        ELSE
+            SELECT max_value INTO max_grind_value3
+            FROM max_meule
+            WHERE stat_type = NEW.sub_stat3_type;
+        END IF;
+        
+        IF max_grind_value3 IS NULL THEN
+            SET max_grind_value3 = 0;
+        END IF;
+        
+        SET NEW.sub_stat3_best_grind_value = max_grind_value3;
+        
+        -- Calculer les hits pour la sous-stat avec la meule
+        SET @max_val = get_max_substat_value(NEW.sub_stat3_type);
+        IF @max_val > 0 THEN
+            SET total_hits_max = total_hits_max + ((NEW.sub_stat3_value + max_grind_value3) / @max_val);
+        END IF;
+    END IF;
+    
+    -- Sub stat 4
+    IF NEW.sub_stat4_type IS NOT NULL AND NEW.sub_stat4_type != '' THEN
+        -- Déterminer la meilleure valeur de meule pour sub_stat4
+        IF NEW.is_ancient = 1 THEN
+            SELECT max_value INTO max_grind_value4
+            FROM max_meule_antique
+            WHERE stat_type = NEW.sub_stat4_type;
+        ELSE
+            SELECT max_value INTO max_grind_value4
+            FROM max_meule
+            WHERE stat_type = NEW.sub_stat4_type;
+        END IF;
+        
+        IF max_grind_value4 IS NULL THEN
+            SET max_grind_value4 = 0;
+        END IF;
+        
+        SET NEW.sub_stat4_best_grind_value = max_grind_value4;
+        
+        -- Calculer les hits pour la sous-stat avec la meule
+        SET @max_val = get_max_substat_value(NEW.sub_stat4_type);
+        IF @max_val > 0 THEN
+            SET total_hits_max = total_hits_max + ((NEW.sub_stat4_value + max_grind_value4) / @max_val);
+        END IF;
+    END IF;
+    
+    -- Calcul de l'efficience théorique max
+    SET NEW.efficience_theorique_max = (total_hits_max / 9) * 100;
+END
+
+CREATE TRIGGER `calculate_efficiency_insert` BEFORE INSERT ON `runes`
+ FOR EACH ROW BEGIN
+    DECLARE total_hits FLOAT DEFAULT 0;
+    DECLARE max_val FLOAT;
+    DECLARE MAX_POSSIBLE_HITS INT DEFAULT 9; -- Maximum possible de hits pour une rune
+    
+    -- Sous-stat 1
+    IF NEW.sub_stat1_type IS NOT NULL AND NEW.sub_stat1_value > 0 THEN
+        SET max_val = get_max_substat_value(NEW.sub_stat1_type);
+        IF max_val > 0 THEN
+            SET total_hits = total_hits + ((NEW.sub_stat1_value + IFNULL(NEW.sub_stat1_grind_value, 0)) / max_val);
+        END IF;
+    END IF;
+    
+    -- Sous-stat 2
+    IF NEW.sub_stat2_type IS NOT NULL AND NEW.sub_stat2_value > 0 THEN
+        SET max_val = get_max_substat_value(NEW.sub_stat2_type);
+        IF max_val > 0 THEN
+            SET total_hits = total_hits + ((NEW.sub_stat2_value + IFNULL(NEW.sub_stat2_grind_value, 0)) / max_val);
+        END IF;
+    END IF;
+    
+    -- Sous-stat 3
+    IF NEW.sub_stat3_type IS NOT NULL AND NEW.sub_stat3_value > 0 THEN
+        SET max_val = get_max_substat_value(NEW.sub_stat3_type);
+        IF max_val > 0 THEN
+            SET total_hits = total_hits + ((NEW.sub_stat3_value + IFNULL(NEW.sub_stat3_grind_value, 0)) / max_val);
+        END IF;
+    END IF;
+    
+    -- Sous-stat 4
+    IF NEW.sub_stat4_type IS NOT NULL AND NEW.sub_stat4_value > 0 THEN
+        SET max_val = get_max_substat_value(NEW.sub_stat4_type);
+        IF max_val > 0 THEN
+            SET total_hits = total_hits + ((NEW.sub_stat4_value + IFNULL(NEW.sub_stat4_grind_value, 0)) / max_val);
+        END IF;
+    END IF;
+    
+    -- Calcul final de l'efficacité (nombre de hits / nombre max de hits * 100)
+    SET NEW.efficiency = (total_hits / MAX_POSSIBLE_HITS) * 100;
+END

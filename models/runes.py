@@ -83,6 +83,7 @@ class Rune:
         self.remplace_stats_theorique = data[37]
         self.stats_value_remplacement= data[38]
         self.laStat_remplacer = data[39]
+        self.classification = data[40]
         
     def get_set_name(self):
         """Retourne le nom du set de runes"""
@@ -180,7 +181,13 @@ class Rune:
             display += f" [Gemme: {original}]"
             
         return display
-
+    
+    def get_classification(self):
+        """Retourne la classification de la rune"""
+        if not self.classification:
+            return "Non classée"
+        return self.classification
+    
     def to_table_row(self):
         """Convertit les données de la rune en format ligne de tableau"""
         return [
@@ -193,7 +200,8 @@ class Rune:
             self.get_substats_display(),
             self.get_eff(),
             self.get_eff_max(),
-            self.get_remplacement_stats()
+            self.get_remplacement_stats(),
+            self.get_classification()
         ]
     def debug_rune(rune):
         print(f"Rune ID: {rune.id}, Rune game ID: {rune.rune_id}")

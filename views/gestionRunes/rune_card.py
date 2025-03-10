@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import (QWidget, QLabel, QFrame, QVBoxLayout, 
+from PyQt6.QtWidgets import (QWidget, QLabel, QFrame, QVBoxLayout, QGridLayout,
                              QSizePolicy, QPushButton, QHBoxLayout, QToolTip)
 from PyQt6.QtGui import QPixmap, QCursor
 from PyQt6.QtCore import Qt
@@ -18,8 +18,8 @@ class RuneCard(QFrame):
         # Configuration de base
         self.setFrameStyle(QFrame.Shape.NoFrame)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.setMinimumSize(220, 280)
-        self.setMaximumSize(250, 320)
+        self.setMinimumSize(280, 320)  
+        self.setMaximumSize(320, 400)  
         
         # Layout principal pour tout le contenu
         self.main_layout = QVBoxLayout(self)
@@ -275,12 +275,13 @@ class RuneCard(QFrame):
         
         self.main_layout.addWidget(header)
         
+    
     def create_stats_section(self):
         stats_container = QFrame()
         stats_container.setProperty("class", "stats-container")
         stats_layout = QVBoxLayout(stats_container)
-        stats_layout.setContentsMargins(10, 15, 10, 10)
-        stats_layout.setSpacing(10)
+        stats_layout.setContentsMargins(8, 12, 8, 8)
+        stats_layout.setSpacing(10)  # Augmenté l'espacement entre les éléments
         
         # Stat principale
         main_stat = QLabel(self.rune.get_main_stat_display())
@@ -295,109 +296,122 @@ class RuneCard(QFrame):
             prefix_label.setProperty("class", "prefix")
             stats_layout.addWidget(prefix_label)
         
+        # Section des sous-stats en utilisant un QGridLayout
+        substats_widget = QWidget()
+        substats_layout = QGridLayout(substats_widget)
+        substats_layout.setContentsMargins(0, 0, 0, 0)
+        substats_layout.setHorizontalSpacing(10)  # Espacement horizontal important
+        substats_layout.setVerticalSpacing(8)     # Espacement vertical entre les lignes
+        
+        # Définir les entêtes de colonnes (invisibles mais utiles pour le layout)
+        # Colonne 0: Icônes (gemme/pire stat)
+        # Colonne 1: Type de stat
+        # Colonne 2: Valeur de base
+        # Colonne 3: Valeur de grind
+        
         # Obtenir l'index de la pire stat (si disponible et si mode d'affichage activé)
         worst_stat_idx = None
-        if self.showing_replacement_indicators:  # Vérifier si l'affichage est activé
+        if self.showing_replacement_indicators:
             try:
                 if hasattr(self.rune, 'level') and isinstance(self.rune.level, (int, float)) and self.rune.level >= 12:
                     worst_stat_idx = self.rune.get_worst_stat_number()
                     
-                    # Vérifier si l'index est un nombre et le convertir
                     if isinstance(worst_stat_idx, str):
                         try:
                             worst_stat_num = int(worst_stat_idx)
-                            # Vérifier si l'index est dans la plage valide (1-4)
                             if 1 <= worst_stat_num <= 4:
                                 worst_stat_idx = worst_stat_num
                             else:
-                                print(f"Avertissement: Index de sous-stat hors plage: {worst_stat_num}")
-                                worst_stat_idx = None  # Ignorer les indices hors plage
+                                worst_stat_idx = None
                         except ValueError:
-                            # Pas un nombre valide
                             worst_stat_idx = None
             except Exception as e:
-                print(f"Erreur lors de l'accès à get_worst_stat_number: {e}")
+                print(f"Erreur: {e}")
                 worst_stat_idx = None
         
         # Sous-stats avec grind et gemmes
         if self.rune.substats:
             for i, substat in enumerate(self.rune.substats, 1):
-                substat_widget = QWidget()
+                row = i - 1  # Index de ligne dans le grid
+                col = 0      # Commence à la colonne 0
                 
-                # Vérifier si c'est la pire stat pour appliquer un style spécial
+                # Vérifier si c'est la pire stat
                 is_worst_stat = False
                 if self.showing_replacement_indicators and worst_stat_idx is not None:
                     if worst_stat_idx == i:
                         is_worst_stat = True
-                        substat_widget.setProperty("class", "worst-stat-widget")
                 
-                substat_layout = QHBoxLayout(substat_widget)
-                substat_layout.setContentsMargins(0, 0, 0, 0)
+                # 1. Colonne pour les icônes
+                icon_widget = QWidget()
+                icon_layout = QHBoxLayout(icon_widget)
+                icon_layout.setContentsMargins(0, 0, 0, 0)
+                icon_layout.setSpacing(2)
                 
-                # Ajouter une icône de warning si c'est la pire stat et que l'affichage est activé
+                # Icône d'avertissement pour la pire stat
                 if is_worst_stat:
-                    worst_icon = QLabel("⚠️")  # Emoji d'avertissement
+                    worst_icon = QLabel("➡️")
                     worst_icon.setProperty("class", "worst-stat-icon")
                     worst_icon.setToolTip("Statistique recommandée à remplacer")
-                    substat_layout.addWidget(worst_icon)
-                    # Stocker la référence à l'icône pour pouvoir la gérer plus tard
+                    icon_layout.addWidget(worst_icon)
                     self.worst_stat_indicator = worst_icon
                 
-                # Ajouter l'icône si la stat est gemmée
+                # Icône de gemme
                 if substat.get('is_gemmed', False):
                     gemmed_icon = QLabel()
                     gemmed_pixmap = QPixmap("images/runes/enchanted.png")
                     if not gemmed_pixmap.isNull():
                         scaled_pixmap = gemmed_pixmap.scaled(15, 15, Qt.AspectRatioMode.KeepAspectRatio)
                         gemmed_icon.setPixmap(scaled_pixmap)
-                        substat_layout.addWidget(gemmed_icon)
+                        icon_layout.addWidget(gemmed_icon)
                 
-                substat_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+                substats_layout.addWidget(icon_widget, row, col)
+                col += 1
                 
-                # Création de la partie de base de la sous-stat
+                # 2. Colonne pour le type de stat
                 stat_type = substat.get('type', '')
-                stat_value = substat.get('value', 0)
-                stat_base_text = f"{stat_type}: {stat_value}"
-                
-                # Gestion des grinds
-                grind_value = substat.get('grind_value', 0)
-                is_gemmed = substat.get('is_gemmed', False)
-                
-                # Si la sous-stat a une valeur de grind
-                if grind_value > 0:
-                    # Label pour la valeur de base
-                    base_label = QLabel(stat_base_text)
-                    base_label.setProperty("class", "substat gemmed" if is_gemmed else "substat")
-                    if is_gemmed:
-                        original_type = substat.get('original_type', 'Unknown')
-                        base_label.setToolTip(f"Gemmé (ancienne stat: {original_type})")
-                    
-                    substat_layout.addWidget(base_label)
-                    
-                    # Label pour la valeur de grind
-                    grind_label = QLabel(f" (+{grind_value})")
-                    grind_label.setProperty("class", "substat grind")
-                    substat_layout.addWidget(grind_label)
+                type_label = QLabel(f"{stat_type}:")
+                if substat.get('is_gemmed', False):
+                    type_label.setProperty("class", "stat-type gemmed")
+                    original_type = substat.get('original_type', 'Unknown')
+                    type_label.setToolTip(f"Gemmé (ancienne stat: {original_type})")
                 else:
-                    # Pas de grind, un seul label
-                    substat_label = QLabel(stat_base_text)
-                    substat_label.setProperty("class", "substat gemmed" if is_gemmed else "substat")
-                    if is_gemmed:
-                        original_type = substat.get('original_type', 'Unknown')
-                        substat_label.setToolTip(f"Gemmé (ancienne stat: {original_type})")
-                    
-                    substat_layout.addWidget(substat_label)
-                    
-                    # Ajouter une croix pour les stats non-grindables
-                    if not self.is_grindable_stat(stat_type):
-                        cross_label = QLabel("✗")
-                        cross_label.setProperty("class", "substat grind")
-                        cross_label.setToolTip("Cette statistique ne peut pas être grindée")
-                        substat_layout.addWidget(cross_label)
+                    type_label.setProperty("class", "stat-type")
                 
-                # Ajouter le widget de sous-stat au conteneur de stats
-                stats_layout.addWidget(substat_widget)
+                # Appliquer le style de la pire stat si nécessaire
+                if is_worst_stat:
+                    type_label.setProperty("is-worst", "true")
+                
+                substats_layout.addWidget(type_label, row, col)
+                col += 1
+                
+                # 3. Colonne pour la valeur de base
+                stat_value = substat.get('value', 0)
+                value_label = QLabel(f"{stat_value}")
+                value_label.setProperty("class", "stat-value")
+                if is_worst_stat:
+                    value_label.setProperty("is-worst", "true")
+                substats_layout.addWidget(value_label, row, col)
+                col += 1
+                
+                # 4. Colonne pour la valeur de grind ou l'indicateur non-grindable
+                grind_value = substat.get('grind_value', 0)
+                if grind_value > 0:
+                    grind_label = QLabel(f"(+{grind_value})")
+                    grind_label.setProperty("class", "grind-value")
+                    substats_layout.addWidget(grind_label, row, col)
+                elif not self.is_grindable_stat(stat_type):
+                    cross_label = QLabel("✗")
+                    cross_label.setProperty("class", "non-grindable")
+                    cross_label.setToolTip("Cette statistique ne peut pas être grindée")
+                    substats_layout.addWidget(cross_label, row, col)
         
+        # Ajouter le widget de sous-stats au layout principal
+        stats_layout.addWidget(substats_widget)
+        
+        # Ajouter un stretch pour pousser tout vers le haut
+        stats_layout.addStretch(1)
+        
+        # Ajouter le conteneur de stats au layout principal
         self.main_layout.addWidget(stats_container)
     
     def is_grindable_stat(self, stat_type):
@@ -409,14 +423,25 @@ class RuneCard(QFrame):
         return stat_type not in non_grindable
     
     def _get_efficiency_class(self, eff_value):
-        """Détermine la classe CSS en fonction de la valeur d'efficacité"""
-        if isinstance(eff_value, (int, float)):
-            if eff_value < 50:
-                return "low"
-            elif eff_value < 75:
-                return "medium"
-            elif eff_value < 90:
-                return "high"
-            else:
-                return "legendary"
-        return "low"  # Valeur par défaut
+        """Détermine la classe CSS en fonction de la classification de la rune"""
+        # Récupérer la classification de la rune
+        classification = self.rune.get_classification()
+        
+        # Traiter les cas spéciaux avec caractères accentués ou majuscules
+        if classification == "GOAT":
+            return "goat"
+        elif classification == "Ultime":
+            return "ultime"
+        elif classification == "Magistral":
+            return "magistral"
+        elif classification == "Divine":
+            return "divine"
+        elif classification == "Précieuse":
+            return "precieuse"
+        elif classification == "Fiable":
+            return "fiable"
+        elif classification == "Basique":
+            return "basique"
+        
+        # Si pas de classification reconnue, utiliser une valeur par défaut
+        return "basique"
